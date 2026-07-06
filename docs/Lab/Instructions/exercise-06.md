@@ -101,10 +101,7 @@ Azure SQL Hyperscale
               "role": "anonymous",
               "actions": ["read"]
             }
-          ],
-          "mcp": {
-            "description": "Approved FAQ content used to answer customer support questions."
-          }
+          ]
         }
       }
     }

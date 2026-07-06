@@ -30,7 +30,7 @@ So far, you have:
 
 - Stored FAQ content in Azure SQL Hyperscale
 - Used vector search to retrieve relevant FAQ entries
-- Built a grounded prompt for GPT-4o
+- Built a grounded prompt for GPT-5-mini
 
 Now you move the orchestration layer into Microsoft Foundry Agents so the agent can decide when to call the MCP tool, retrieve relevant FAQ content, and generate a grounded response.
 
@@ -134,7 +134,7 @@ Keep the dev tunnel running during the exercise.
     | Setting | Value |
     | --- | --- |
     | Name | `faq{LAB_INSTANCE_ID}` |
-    | Remote MCP Server endpoint | `<tunnelURL>` |
+    | Remote MCP Server endpoint | `<tunnelURL>/mcp` |
     | Authentication | `Unauthenticated` |
 
 1. Select `Connect`.

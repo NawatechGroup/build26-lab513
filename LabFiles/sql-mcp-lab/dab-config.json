@@ -6,46 +6,26 @@
   },
   "runtime": {
     "rest": {
-      "enabled": true,
-      "path": "/api",
-      "request-body-strict": true
+      "enabled": true
     },
     "mcp": {
       "enabled": true
     },
     "host": {
-      "cors": null,
-      "authentication": null,
       "mode": "development"
     }
   },
-  "autoentities": {},
   "entities": {
     "faqContent": {
-      "description": "Approved FAQ content used to answer customer support questions.",
       "source": {
         "object": "dbo.FAQ_Content",
         "type": "table"
       },
-      "fields": [],
-      "graphql": {
-        "enabled": true,
-        "type": {
-          "singular": "faqContent",
-          "plural": "faqContents"
-        }
-      },
-      "rest": {
-        "enabled": true
-      },
+      "primary-key": ["faq_id"],
       "permissions": [
         {
           "role": "anonymous",
-          "actions": [
-            {
-              "action": "read"
-            }
-          ]
+          "actions": ["read"]
         }
       ]
     }

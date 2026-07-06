@@ -95,7 +95,7 @@ To accomplish this, the system must:
     ```sql
     DECLARE @payload NVARCHAR(MAX);
     DECLARE @response NVARCHAR(MAX);
-    DECLARE @headers NVARCHAR(MAX) = N'{"api-key": ""}';
+    DECLARE @headers NVARCHAR(MAX) = N'{"api-key": "<YOUR_AZURE_AI_FOUNDRY_API_KEY>"}';
     
     SET @payload = N'{' +
     N'"messages":[' +
@@ -106,7 +106,7 @@ To accomplish this, the system must:
     
     EXEC sp_invoke_external_rest_endpoint
         @method = 'POST',
-        @url = N'',
+        @url = N'https://<YOUR_AZURE_AI_FOUNDRY_ENDPOINT>/openai/deployments/gpt-5-mini/chat/completions?api-version=2024-10-21',
         @headers = @headers,
         @payload = @payload,
         @response = @response OUTPUT;
@@ -161,7 +161,7 @@ To accomplish this, the system must:
         -> Top FAQ rows
         -> Context assembly
         -> Grounded prompt
-        -> GPT-4o generation
+        -> GPT-5-mini generation
         -> Grounded AI answer
     ```
 
