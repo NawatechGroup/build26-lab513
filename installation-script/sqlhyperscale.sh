@@ -259,12 +259,12 @@ render_bootstrap_sql() {
   mkdir -p "$GEN_DIR"
   chmod 700 "$GEN_DIR"
 
-  sed -e "s|<YOUR_AZURE_FOUNDRY_API_KEY>|${key_escaped}|g" \
-      -e "s|<YOUR_AZURE_FOUNDRY_ENDPOINT>|${endpoint_escaped}|g" \
+  sed -e "s|<YOUR_FOUNDRY_API_KEY>|${key_escaped}|g" \
+      -e "s|<YOUR_FOUNDRY_ENDPOINT>|${endpoint_escaped}|g" \
       "$SQL_DIR/03_generate_embeddings.sql" > "$GEN_DIR/03_generate_embeddings.sql"
 
-  sed -e "s|<YOUR_AZURE_FOUNDRY_API_KEY>|${key_escaped}|g" \
-      -e "s|<YOUR_AZURE_FOUNDRY_ENDPOINT>|${endpoint_escaped}|g" \
+  sed -e "s|<YOUR_FOUNDRY_API_KEY>|${key_escaped}|g" \
+      -e "s|<YOUR_FOUNDRY_ENDPOINT>|${endpoint_escaped}|g" \
       "$SQL_DIR/04_search_proc.sql" > "$GEN_DIR/04_search_proc.sql"
 
   chmod 600 "$GEN_DIR/03_generate_embeddings.sql" "$GEN_DIR/04_search_proc.sql"

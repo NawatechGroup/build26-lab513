@@ -28,7 +28,7 @@ BEGIN
     DECLARE @payload  NVARCHAR(MAX),
             @response NVARCHAR(MAX),
             @qvec     VECTOR(1536),
-            @headers  NVARCHAR(MAX) = N'{"api-key": "<YOUR_FOUNDRY_API_KEY>"}';  -- replace with your Azure Foundry API key
+            @headers  NVARCHAR(MAX) = N'{"api-key": "<YOUR_FOUNDRY_API_KEY>"}';  -- replace with your Microsoft Foundry API key
 
     -- 1) Embed the incoming question with Azure OpenAI.
     SET @payload = N'{"model": "text-embedding-3-small", "input":"' + STRING_ESCAPE(@user_question, 'json') + N'"}';
