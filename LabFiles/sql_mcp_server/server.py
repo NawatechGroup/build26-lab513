@@ -1,5 +1,3 @@
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 import os
@@ -8,11 +6,13 @@ from dotenv import load_dotenv
 import logging
 import sys
 
-# 1. Konfigurasi Database
+# Import FastMCP (MCP helper)
+from fastmcp import FastMCP
+
+# 1. Database and logging configuration
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Logging configuration
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logger = logging.getLogger("faq_server")
 logger.setLevel(LOG_LEVEL)
@@ -28,44 +28,20 @@ logger.debug("Logging initialized", extra={"LOG_LEVEL": LOG_LEVEL})
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
-    future=True
+    future=True,
 )
 SessionLocal = sessionmaker(bind=engine)
 
-# 2. Inisialisasi FastAPI
-app = FastAPI()
+# 2. Initialize FastMCP server
+mcp = FastMCP("FAQ SQL Assistant")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# 3. Helper functions (business logic)
 
-# 3. Manifest Tool
-TOOL_MANIFEST = {
-    "tools": [
-        {
-            "name": "ask_faq",
-            "title": "Ask FAQ",
-            "description": "Search FAQ using Azure SQL Vector Search and answer using Azure OpenAI.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "question": {
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "question"
-                ]
-            }
-        }
-    ]
-}
-
-# 4. Helper Functions
 def search_faq(question: str):
+    """Execute the stored procedure to retrieve relevant FAQ rows.
+
+    Returns a list of mapping results from the database.
+    """
     logger.debug("search_faq called", extra={"question": question})
     db = SessionLocal()
     try:
@@ -73,7 +49,7 @@ def search_faq(question: str):
                 EXEC dbo.SearchFAQ
                     @user_question=:question
             """)
-        logger.debug("Executing DB query", extra={"sql": str(sql)} )
+        logger.debug("Executing DB query", extra={"sql": str(sql)})
         rows = db.execute(sql, {"question": question}).mappings().all()
         logger.info("DB query returned rows", extra={"count": len(rows)})
         return rows
@@ -84,6 +60,10 @@ def search_faq(question: str):
         db.close()
 
 def build_context(rows):
+    """Build a text context from DB rows for the model prompt.
+
+    Each row becomes a short Q/A block. Returns a single string.
+    """
     logger.debug("build_context called", extra={"rows_count": len(rows) if rows else 0})
     if not rows:
         logger.debug("No rows found for context")
@@ -93,7 +73,8 @@ def build_context(rows):
     logger.debug("Context built", extra={"context_length": len(context)})
     return context
 
-def generate_answer(question, context):
+def generate_answer(question: str, context: str):
+    """Call the model endpoint with the assembled prompt and return the answer text."""
     prompt = f"""
 Use ONLY the context below to answer the question.
 
@@ -130,7 +111,7 @@ If the answer is not in the context, say you do not know.
             os.getenv("OPENAI_URL"),
             json=payload,
             headers=headers,
-            timeout=30
+            timeout=30,
         )
         logger.debug("OpenAI response status", extra={"status_code": response.status_code})
         response.raise_for_status()
@@ -142,93 +123,28 @@ If the answer is not in the context, say you do not know.
         logger.exception("Error while calling OpenAI API")
         raise
 
-# 5. Route MCP
-@app.post("/mcp")
-async def mcp(request: Request):
+# 4. Tool declaration using decorator
+@mcp.tool()
+def ask_faq(question: str) -> str:
+    """Tool entrypoint: search DB, build context, call model, return answer.
+
+    Returns a string answer or an error message in Indonesian when exceptions occur.
+    """
     try:
-        body = await request.json()
-    except Exception:
-        logger.exception("Failed to parse JSON body")
-        return {
-            "jsonrpc": "2.0",
-            "id": None,
-            "error": {"code": -32700, "message": "Parse error"}
-        }
-    method = body.get("method")
-    request_id = body.get("id")
-    logger.info("Received MCP request", extra={"method": method, "id": request_id})
+        logger.info("ask_faq called", extra={"question": question})
+        rows = search_faq(question)
+        context = build_context(rows)
+        answer = generate_answer(question, context)
+        logger.info("ask_faq completed", extra={"answer_length": len(answer)})
+        return answer
+    except Exception as e:
+        logger.exception("ask_faq failed")
+        return f"Terjadi kesalahan internal server: {str(e)}"
 
-    # Tambahkan blok ini untuk menyambut "handshake" dari Foundry
-    if method == "initialize":
-        return {
-            "jsonrpc": "2.0",
-            "id": request_id,
-            "result": {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {
-                    "tools": {}
-                },
-                "serverInfo": {
-                    "name": "faq-sql-assistant",
-                    "version": "1.0.0"
-                }
-            }
-        }
-        
-    # Foundry terkadang mengirimkan notifikasi setelah initialize sukses
-    if method == "notifications/initialized":
-        return {}
-
-    if method == "tools/list":
-        return {
-            "jsonrpc": "2.0",
-            "id": request_id,
-            "result": {
-                "tools": TOOL_MANIFEST["tools"]
-            }
-        }
-
-    if method == "tools/call":
-        params = body["params"]
-        logger.debug("tools/call params", extra={"params": params})
-        if params["name"] == "ask_faq":
-            try:
-                question = params["arguments"]["question"]
-                logger.info("ask_faq called", extra={"question": question})
-                rows = search_faq(question)
-                context = build_context(rows)
-                answer = generate_answer(question, context)
-
-                logger.info("ask_faq completed", extra={"answer_length": len(answer)})
-                return {
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "result": {
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": answer
-                            }
-                        ]
-                    }
-                }
-            except Exception:
-                logger.exception("ask_faq failed")
-                return {
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "error": {"code": -32000, "message": "Internal server error"}
-                }
-
-    return {
-        "jsonrpc": "2.0",
-        "id": request_id,
-        "error": {
-            "code": -32601,
-            "message": "Method not found"
-        }
-    }
-
+# 5. Run the server
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    mcp.run(
+        transport="http", 
+        host="0.0.0.0", 
+        port=8000,
+    )

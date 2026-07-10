@@ -28,14 +28,14 @@ BEGIN
     DECLARE @payload  NVARCHAR(MAX),
             @response NVARCHAR(MAX),
             @qvec     VECTOR(1536),
-            @headers  NVARCHAR(MAX) = N'{"api-key": "<YOUR_AZURE_FOUNDRY_API_KEY>"}';  -- replace with your Azure Foundry API key
+            @headers  NVARCHAR(MAX) = N'{"api-key": "<YOUR_FOUNDRY_API_KEY>"}';  -- replace with your Azure Foundry API key
 
     -- 1) Embed the incoming question with Azure OpenAI.
     SET @payload = N'{"model": "text-embedding-3-small", "input":"' + STRING_ESCAPE(@user_question, 'json') + N'"}';
 
     EXEC sp_invoke_external_rest_endpoint
         @method   = 'POST',
-        @url      = N'https://<YOUR_AZURE_FOUNDRY_ENDPOINT>/openai/v1/embeddings',
+        @url      = N'https://<YOUR_FOUNDRY_ENDPOINT>/openai/v1/embeddings',
         @headers  = @headers,
         @payload  = @payload,
         @response = @response OUTPUT;

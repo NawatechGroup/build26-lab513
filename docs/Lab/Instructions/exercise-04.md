@@ -1,28 +1,31 @@
 # Exercise 4: Orchestrate the AI FAQ Workflow with Microsoft Foundry Agents
 
-In this exercise, you use Microsoft Foundry Agents to orchestrate the FAQ workflow end to end.
+## Why This Exercise Matters
 
-You configure an agent that can:
+In Exercise 3, you orchestrated the full RAG workflow yourself: you wrote the SQL, built the prompt, and called the model. That is fine for a demo — but in a real system you want **the AI to decide when to retrieve data** based on the user's question. That is what agents do.
 
-- Receive a natural language support question
-- Call an MCP tool
-- Use that tool to retrieve FAQ matches from your service
-- Ground the response by using approved FAQ content
-- Return a final answer to the user
+An **AI agent** is a model that has been given a set of **tools** it can call autonomously. When a user asks a question, the agent reasons about which tools (if any) to call, calls them, reads the results, and then formulates a response. The agent is not just a chatbot — it is a decision-maker.
 
-For this exercise, the MCP tool runs locally on your machine and is exposed securely to Foundry by using dev tunnel.
+**Model Context Protocol (MCP)** is the standardized interface that lets agents discover and call tools. Instead of each agent needing custom integration code for every tool, MCP defines a universal format for tool descriptions, input schemas, and responses. An MCP server exposes tools; an MCP client (like Foundry) calls them.
+
+> **Why does this matter for SQL data?**
+>
+> Without MCP, wiring an AI agent to your database requires custom middleware for every agent platform. With MCP, you write the integration once (or use a pre-built server like DAB in Exercise 6) and any MCP-compatible agent can use it immediately. Microsoft Foundry, GitHub Copilot, and many other tools are MCP clients.
 
 ## Architecture Flow
 
 ```text
 User question
 -> Microsoft Foundry Agent
--> MCP tool call
--> Local MCP server
--> FAQ retrieval and business logic
--> Tool result returned to agent
--> Grounded final response
+-> Agent decides to call the MCP tool
+-> MCP tool call sent to local MCP server
+-> Local MCP server calls dbo.SearchFAQ on Azure SQL
+-> FAQ results returned as tool output
+-> Agent reads tool output and generates a grounded final response
+-> Answer delivered to user
 ```
+
+Notice the key difference from Exercise 3: **the agent decides to call the tool**. You do not script "call SearchFAQ then send to GPT". The agent's reasoning model makes that decision based on the user's question and the tool descriptions.
 
 ## Scenario
 
@@ -35,6 +38,10 @@ So far, you have:
 Now you move the orchestration layer into Microsoft Foundry Agents so the agent can decide when to call the MCP tool, retrieve relevant FAQ content, and generate a grounded response.
 
 ## Task 1: Start the Local MCP Tool
+
+The MCP server in `C:\LabFiles\sql_mcp_server` is a Python application that exposes `dbo.SearchFAQ` as an MCP-compatible tool. When Foundry calls this tool, the server accepts the user question, queries Azure SQL, and returns the structured FAQ results.
+
+Running locally means you can inspect the server logs and see every tool call in real time — which is invaluable for understanding how the agent-to-tool interaction works.
 
 1. In Visual Studio Code, press `Ctrl + Shift + E` to open Explorer.
 1. Select `Open Folder` and navigate to `C:\LabFiles\sql_mcp_server`.
@@ -59,6 +66,27 @@ Now you move the orchestration layer into Microsoft Foundry Agents so the agent 
     pip install -r requirements.txt
     ```
 
+1. Configure the MCP server by creating a `.env` file from the provided example template.
+
+    ```powershell
+    Copy-Item .env.example .env
+    code .env
+    ```
+
+    Fill in the four variables using values from `sqldbhyperscale.env` and your credential sheet:
+
+    | Variable | Value |
+    | --- | --- |
+    | `DATABASE_URL` | `mssql+pymssql://adminuser:<SQL_PASSWORD>@faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net/faq-ai-assistant-db-{LAB_INSTANCE_ID}` |
+    | `OPENAI_URL` | `https://<YOUR_FOUNDRY_ENDPOINT>/openai/v1/chat/completions` |
+    | `OPENAI_API_KEY` | Your Microsoft Foundry API key |
+    | `OPENAI_MODEL` | `gpt-5-mini` |
+
+    > [!Note]
+    > Replace `<SQL_PASSWORD>` and `{LAB_INSTANCE_ID}` with the values from `sqldbhyperscale.env`, and `<YOUR_FOUNDRY_ENDPOINT>` with the Microsoft Foundry endpoint from your credential sheet (the hostname only, e.g. `your-resource.openai.azure.com`).
+
+    Save the file and return to the terminal.
+
 1. Start the MCP server.
 
     ```powershell
@@ -74,46 +102,50 @@ Now you move the orchestration layer into Microsoft Foundry Agents so the agent 
     [MCP] MCP endpoint : http://0.0.0.0:8000/mcp
     ```
 
-Keep this terminal running.
+    Keep this terminal running.
 
 ## Task 2: Expose the Local MCP Server with Dev Tunnel
 
+> **Why Dev Tunnel?**
+>
+> Your MCP server runs on `localhost:8000`. Microsoft Foundry is a cloud service — it runs in Azure data centers and cannot reach your laptop's localhost address over the internet. Dev Tunnel creates a secure, public HTTPS URL that proxies requests from Foundry to your local port 8000.
+>
+> This is a common developer pattern for testing webhooks and APIs locally before deploying to the cloud. The `--allow-anonymous` flag means Foundry does not need to authenticate to reach the tunnel — acceptable for a lab, but in production you would use an authenticated tunnel or deploy the server to Azure.
+
 1. Open a new terminal window.
-1. Sign in to dev tunnel.
+1. Sign in to dev tunnel using your **Microsoft Entra ID account** (the same account provided on your credential sheet).
 
     ```bash
     devtunnel user login
     ```
 
-1. Select `Work or school account` and sign in with your Microsoft Entra ID account.
+    Your browser opens to the Microsoft sign-in page. Sign in with your Entra ID credentials, then return to the terminal.
 
-    | Setting | Value |
-    | --- | --- |
-    | Username | `{USERNAME}` |
-    | TAP | `{ACCESSTOKEN}` |
-
-1. Select `Yes`, then select `Done`.
-1. Run the tunnel setup commands.
+1. Run the tunnel setup commands. Replace `{LAB_INSTANCE_ID}` with your value from Exercise 0.
 
     ```bash
-    devtunnel create my-faq-tunnel{LAB_INSTANCE_ID} --allow-anonymous
-    devtunnel port create my-faq-tunnel{LAB_INSTANCE_ID} -p 8000 --protocol http
-    devtunnel host my-faq-tunnel{LAB_INSTANCE_ID}
+    devtunnel create my-faq-tunnel-{LAB_INSTANCE_ID} --allow-anonymous
+    devtunnel port create my-faq-tunnel-{LAB_INSTANCE_ID} -p 8000 --protocol http
+    devtunnel host my-faq-tunnel-{LAB_INSTANCE_ID}
     ```
 
 1. Review the output. You should receive a public HTTPS forwarding URL similar to:
 
     ```text
-    https://<your-tunnel-name>.devtunnels.ms:8000
+    Hosting port 8000 at https://my-faq-tunnel-{LAB_INSTANCE_ID}-8000.devtunnels.ms/
     ```
 
     ![Screenshot of terminal with dev tunnel output showing public URL](../media/terminal-dev-tunnel-link.png)
 
 1. Copy the public tunnel URL. You will use it when configuring the MCP tool connection in Foundry.
 
-Keep the dev tunnel running during the exercise.
+    Keep the dev tunnel running during the exercise.
 
 ## Task 3: Add the MCP Tool to the Foundry Agent
+
+**Why configure an agent with instructions?** The instructions you provide in the agent configuration shape the model's behavior. Without clear instructions, the agent might answer from its own training data instead of calling your tool. The instructions you write here explicitly tell the agent: *use the tool first, stay grounded in the results, and if the tool finds nothing, say you do not know.*
+
+This is called **system-level grounding** — you are setting the rules of the game at the agent configuration level, not just at the prompt level.
 
 1. Open Microsoft Edge and go to `https://ai.azure.com/`.
 1. Select `Sign In`.
@@ -133,7 +165,7 @@ Keep the dev tunnel running during the exercise.
 
     | Setting | Value |
     | --- | --- |
-    | Name | `faq{LAB_INSTANCE_ID}` |
+    | Name | `faq-{LAB_INSTANCE_ID}` |
     | Remote MCP Server endpoint | `<tunnelURL>/mcp` |
     | Authentication | `Unauthenticated` |
 
@@ -158,6 +190,8 @@ Keep the dev tunnel running during the exercise.
 1. Select `Save` to save the agent configuration.
 
 ## Task 4: Test the Agent End to End
+
+**What to watch for:** When the agent receives your question, it does not immediately answer. It first decides to call the MCP tool, waits for the result, reads the FAQ content returned, and then composes a response. You can see this in the tool activity panel. This is agent reasoning in action — the model is orchestrating a multi-step workflow autonomously.
 
 1. Open the agent test pane or chat interface in Foundry.
 1. Submit a support question.

@@ -21,7 +21,7 @@ DECLARE @id       INT,
         @payload  NVARCHAR(MAX),
         @response NVARCHAR(MAX),
         @vec      VECTOR(1536),
-        @headers  NVARCHAR(MAX) = N'{"api-key": "<YOUR_AZURE_FOUNDRY_API_KEY>"}';  -- replace with your Azure Foundry API key
+        @headers  NVARCHAR(MAX) = N'{"api-key": "<YOUR_FOUNDRY_API_KEY>"}';  -- replace with your Microsoft Foundry API key
 
 DECLARE faq_cur CURSOR LOCAL FAST_FORWARD FOR
     SELECT faq_id, question FROM dbo.FAQ_Content ORDER BY faq_id;
@@ -35,7 +35,7 @@ BEGIN
 
     EXEC sp_invoke_external_rest_endpoint
         @method   = 'POST',
-        @url      = N'https://<YOUR_AZURE_FOUNDRY_ENDPOINT>/openai/v1/embeddings',
+        @url      = N'https://<YOUR_FOUNDRY_ENDPOINT>/openai/v1/embeddings',  -- replace with your Microsoft Foundry endpoint
         @headers  = @headers,
         @payload  = @payload,
         @response = @response OUTPUT;

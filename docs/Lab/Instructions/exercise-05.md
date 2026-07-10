@@ -1,8 +1,29 @@
 # Exercise 5: Integrate Azure SQL Hyperscale with Microsoft Fabric for Analytics
 
-In this exercise, you enable real-time analytics by mirroring Azure SQL Hyperscale data into Microsoft Fabric without building ingestion pipelines.
+## Why This Exercise Matters
 
-You will:
+Your Azure SQL Hyperscale database now supports two very different workloads:
+
+1. **Transactional + AI workloads** — Exercises 1–4 run semantic searches, call Azure OpenAI, and return grounded FAQ answers in milliseconds. This requires a database optimized for point lookups, stored procedure execution, and vector distance calculations.
+
+2. **Analytics workloads** — Business stakeholders want to know: How many FAQs exist per category? Which categories generate the most support requests? Is the content distribution balanced? Analytics queries often scan entire tables, aggregate millions of rows, and run on-demand reports.
+
+These two workload types have **conflicting optimization needs**. Running heavy analytical scans on the same database that serves real-time AI queries can degrade both. The enterprise pattern is to **separate them**: operational data lives in Azure SQL, analytical copies live in a lakehouse.
+
+**Microsoft Fabric Mirroring** makes this separation effortless. Instead of building ETL pipelines, scheduling exports, or managing data transformation, Mirroring continuously replicates changes from Azure SQL into OneLake as Delta Parquet files. No pipeline code. No orchestration. No data engineering team required.
+
+## What Mirroring Is (and Is Not)
+
+| What Mirroring Does | What Mirroring Does Not Do |
+|--------------------|--------------------------|
+| Replicates row-level changes from Azure SQL to OneLake in near-real time | Replace your transactional database |
+| Stores data as open Delta Parquet format — readable by Spark, SQL, notebooks | Require you to write ingestion code |
+| Lets you choose which tables to replicate | Replicate all tables by default — you control the scope |
+| Automatically handles schema changes | Support every column type (e.g., `VECTOR` columns are excluded here by design) |
+
+> **Why did we exclude `dbo.FAQ_Embeddings`?** The embeddings table contains raw binary vectors optimized for similarity search. They have no meaning in a Power BI report and would add significant storage overhead. The content table is what analysts need. This selective mirroring is a deliberate design choice: replicate only what analytics consumers will actually use.
+
+## What You Will Do
 
 - Enable mirroring for Azure SQL Database in Microsoft Fabric
 - Selectively mirror supported tables into OneLake
@@ -10,8 +31,6 @@ You will:
 - Create a semantic model
 - Build a Power BI report on mirrored data
 - Explore data lineage across Fabric assets
-
-By the end of this exercise, you will understand how Fabric enables analytics on operational data with minimal engineering effort.
 
 ## Scenario
 
@@ -26,21 +45,36 @@ Instead of building ETL pipelines, you use Microsoft Fabric Mirroring to replica
 
 ```text
 Azure SQL Hyperscale
--> FAQ_Content (operational data)
--> Fabric Mirroring
--> OneLake (Delta tables)
--> SQL analytics endpoint
--> Semantic model
--> Power BI report
+  FAQ_Content (operational + mirrored)
+  FAQ_Embeddings (operational only, not mirrored)
+         |
+         | Fabric Mirroring (continuous, no ETL)
+         v
+      OneLake (Delta Parquet)
+         |
+         v
+  SQL analytics endpoint
+         |
+     +---+---+
+     |       |
+ Semantic   Power BI
+  Model      Report
 ```
 
 ## Task 1: Enable Mirroring for Azure SQL Hyperscale
+
+**What you are configuring:** You are creating a **Mirrored Azure SQL Database** item in Fabric. This item is the connection bridge between your Azure SQL Hyperscale instance and OneLake. Once created, it continuously monitors Azure SQL's transaction log for changes and replicates them to OneLake without any additional configuration.
+
+The connection uses **Basic (SQL) authentication** because the Fabric Mirroring service connects from the cloud and needs a stable credential — Entra ID interactive login is not applicable for a background sync service.
+
+> **Why choose only `dbo.FAQ_Content` and not `dbo.FAQ_Embeddings`?**
+> Embeddings are binary vector data with no human-readable meaning. Mirroring them would waste storage and confuse report consumers. Analytics stakeholders need categories, questions, and answers — not 1,536-element float arrays.
 
 1. Open Microsoft Fabric in the browser: [https://app.fabric.microsoft.com](https://app.fabric.microsoft.com)
 
 1. Select `My workspace` and create a new workspace.
 1. Select `+ New workspace`.
-1. Name the workspace `Workspace{LAB_INSTANCE_ID}`.
+1. Name the workspace `FAQ-Workspace-{LAB_INSTANCE_ID}`.
 1. Select `Apply`.
 1. From the workspace, select `+ New Item`.
 1. Search for and select `Mirrored Azure SQL Database`.
@@ -55,11 +89,11 @@ Azure SQL Hyperscale
 
     | Setting | Value |
     | --- | --- |
-    | Server name | `faq-ai-assistant-{LAB_INSTANCE_ID}.database.windows.net` |
-    | Database | `faq-ai-assistant-db` |
+    | Server name | `faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net` |
+    | Database | `faq-ai-assistant-db-{LAB_INSTANCE_ID}` |
     | Authentication kind | `Basic` |
-    | Username | `admin-{LAB_INSTANCE_ID}` |
-    | Password | `{PASSWORD}` |
+    | Username | `adminuser` |
+    | Password | `{SQL_PASSWORD}` (from `sqldbhyperscale.env`) |
     | Privacy level | `None` |
     | Use encrypted connection | `Enabled` |
 
@@ -78,7 +112,7 @@ Basic authentication corresponds to SQL authentication.
     ![Screenshot of Microsoft Fabric with the dbo.FAQ_Content table selected for mirroring](../media/fabric-azure-sql-table-selection.png)
 
 1. Select `Connect`.
-1. Confirm the destination name is `faq-ai-assistant-db`.
+1. Confirm the destination name is `faq-ai-assistant-db-{LAB_INSTANCE_ID}`.
 1. Select `Create mirrored database`.
 
 1. The expected result:
@@ -118,6 +152,12 @@ Basic authentication corresponds to SQL authentication.
 
 ## Task 3: Create a Power BI Semantic Model and Report
 
+> **Concept: What Is a Semantic Model?**
+>
+> A semantic model (formerly called a Power BI dataset) is a layer that sits between raw data and reports. It defines business-friendly names for columns, relationships between tables, measures (calculated aggregations), and access rules. Reports built on the same semantic model always use consistent, governed definitions.
+>
+> In this lab, the semantic model wraps the mirrored `FAQ_Content` table and uses **Direct Lake on SQL** storage mode. This means Power BI reads directly from the OneLake Delta files rather than importing data into Power BI's own cache — so reports always reflect the current state of mirrored data.
+
 1. Return to the mirrored database item.
 
     ![Screenshot of Microsoft Fabric with the mirrored database item](../media/fabric-mirrored-sql-selected.png)
@@ -127,14 +167,14 @@ Basic authentication corresponds to SQL authentication.
     | Setting | Value |
     | --- | --- |
     | Semantic model name | `FAQ_Content` |
-    | Workspace | `Workspace{LAB_INSTANCE_ID}` |
+    | Workspace | `FAQ-Workspace-{LAB_INSTANCE_ID}` |
     | Storage mode | `Direct Lake on SQL` |
     | Tables | `FAQ_Content` |
 
     ![Screenshot of Microsoft Fabric with the semantic model creation settings filled in](../media/fabric-semantic-model-table-select.png)
 
 1. Select `Confirm` and wait for semantic model creation to finish.
-1. Open the `Workspace{LAB_INSTANCE_ID}` workspace.
+1. Open the `FAQ-Workspace-{LAB_INSTANCE_ID}` workspace.
 1. In the resource list, open the ellipsis next to the `FAQ_Content` semantic model and select `Create report`.
 
     ![Screenshot of Microsoft Fabric with the Create report option highlighted next to the semantic model](../media/fabric-create-report.png)
@@ -159,7 +199,7 @@ Basic authentication corresponds to SQL authentication.
 
 ## Task 4: Explore Lineage
 
-1. Return to `Workspace{LAB_INSTANCE_ID}` and select `Lineage view`.
+1. Return to `FAQ-Workspace-{LAB_INSTANCE_ID}` and select `Lineage view`.
 
     ![Screenshot of Microsoft Fabric with the Lineage view highlighted](../media/fabric-lineage-view.png)
 

@@ -1,8 +1,41 @@
 # Exercise 6: Expose Azure SQL Hyperscale using SQL MCP Server (Data API Builder)
 
-In this exercise, you use SQL MCP Server built into Data API Builder (DAB) to expose Azure SQL Hyperscale as an MCP-compatible tool.
+## Why This Exercise Matters
 
-You will:
+In Exercise 4, you exposed Azure SQL to an AI agent by writing a **custom Python MCP server**. That gave you full control: you could implement any logic, call any stored procedure, and shape the output exactly as needed. But custom code has a cost — it must be written, maintained, secured, deployed, and updated as the schema changes.
+
+**Data API Builder (DAB)** takes a different approach: you describe your database entities in a JSON configuration file, and DAB automatically generates a REST API *and* an MCP server with no custom code. It handles pagination, filtering, authentication, and protocol details for you.
+
+> **When to use DAB versus a custom MCP server:**
+>
+> | Scenario | Recommended approach |
+> |----------|---------------------|
+> | Expose tables and views for read/write access with standard filtering | **DAB** — zero code, maintainable config |
+> | Run complex stored procedures with custom business logic | **Custom MCP server** — full control |
+> | Prototype quickly for demos and POCs | **DAB** — fastest path to an MCP endpoint |
+> | Need custom authentication or transformation logic | **Custom MCP server** |
+> | Schema changes frequently | **DAB** — update the config, no code changes |
+
+This exercise shows you the DAB path. After completing it, you will understand both approaches and be able to choose the right one for any project.
+
+## Architecture Overview
+
+```text
+Azure SQL Hyperscale
+        |
+        | (no custom code — JSON config only)
+        v
+  Data API Builder
+  - REST API (optional)
+  - MCP Server (built-in)
+        |
+  Visual Studio Code
+  (Copilot Chat as MCP client)
+        |
+  AI queries FAQ data directly through MCP
+```
+
+## What You Will Do
 
 - Configure Data API Builder for Azure SQL Hyperscale
 - Use a prebuilt DAB configuration
@@ -11,19 +44,11 @@ You will:
 - Connect to it from Visual Studio Code
 - Query your database through MCP
 
-By the end of this exercise, you will understand how to expose Azure SQL Hyperscale to AI agents by using a standardized MCP layer.
-
-## Architecture Overview
-
-```text
-Azure SQL Hyperscale
--> Data API Builder (DAB)
--> SQL MCP Server
--> Visual Studio Code (Copilot Chat)
--> AI grounded on SQL data
-```
-
 ## Task 1: Install Data API Builder
+
+**What is Data API Builder?** DAB is a .NET-based open-source tool from Microsoft that takes a JSON configuration file describing your database and automatically exposes it as a REST API and (since version 1.7) as an MCP server. It runs as a local process, a Docker container, or a deployed Azure service.
+
+You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-manifest`) locks the version to this project, so anyone who clones the repo gets the same version with `dotnet tool restore`.
 
 1. Return to Visual Studio Code and stop the Python server by pressing `Ctrl+C` in the terminal window where it is running.
 1. Create a working folder.
@@ -55,6 +80,14 @@ Azure SQL Hyperscale
 
 ## Task 2: Create the DAB Configuration
 
+**How the DAB config works:** The configuration file has three main sections:
+
+- **`data-source`** — Specifies the database type and connection string. DAB uses this to connect and introspect the schema.
+- **`runtime`** — Toggles REST and MCP endpoints. Setting `"mcp": { "enabled": true }` is all it takes to activate the MCP server. The `development` host mode adds debug logging and relaxes some CORS rules, which is appropriate for local development.
+- **`entities`** — Maps database objects (tables, views, stored procedures) to API endpoints. Each entity specifies the source object, the primary key, and which roles can perform which actions. Here, `anonymous` users get `read` access only — they cannot insert, update, or delete.
+
+> **Why `faqContent` and not `FAQ_Content`?** DAB entity names become part of the API and MCP tool names. Camel case (`faqContent`) is a convention for JSON-based APIs. The underlying SQL table is still `dbo.FAQ_Content` — the mapping is explicit in the `source.object` field.
+
 1. Create a new file and select **Open**.
 
     ```powershell
@@ -64,19 +97,19 @@ Azure SQL Hyperscale
 1. Add a DAB configuration that:
 
 - Uses the latest DAB schema
-- Connects to Azure SQL Hyperscale by using the `faq-ai-assistant-{LAB_INSTANCE_ID}` server and `faq-ai-assistant-db` database
+- Connects to Azure SQL Hyperscale by using the `faq-ai-server-{LAB_INSTANCE_ID}` server and `faq-ai-assistant-db-{LAB_INSTANCE_ID}` database
 - Enables both `rest` and `mcp`
 - Runs the host in `development` mode
 - Exposes `dbo.FAQ_Content` as a read-only entity for MCP use
 
-1. Use a configuration like the following:
+1. Use a configuration like the following. Replace `{LAB_INSTANCE_ID}` with your value from Exercise 0, and `{SQL_PASSWORD}` with the `SQL_PASSWORD` value from `sqldbhyperscale.env`.
 
     ```json
     {
       "$schema": "https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json",
       "data-source": {
         "database-type": "mssql",
-        "connection-string": "Server=tcp:faq-ai-assistant-{LAB_INSTANCE_ID}.database.windows.net,1433;Initial Catalog=faq-ai-assistant-db;User ID=admin-{LAB_INSTANCE_ID};Password={PASSWORD};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        "connection-string": "Server=tcp:faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net,1433;Initial Catalog=faq-ai-assistant-db-{LAB_INSTANCE_ID};User ID=adminuser;Password={SQL_PASSWORD};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
       },
       "runtime": {
         "rest": {
@@ -98,6 +131,14 @@ Azure SQL Hyperscale
           "primary-key": ["faq_id"],
           "permissions": [
             {
+              "role": "anonymous",
+              "actions": ["read"]
+            }
+          ]
+        }
+      }
+    }
+    ```
               "role": "anonymous",
               "actions": ["read"]
             }
@@ -134,6 +175,10 @@ Azure SQL Hyperscale
 1. Keep this terminal running.
 
 ## Task 4: Add MCP Configuration for Visual Studio Code
+
+**What this `mcp.json` does:** VS Code reads `.vscode/mcp.json` to discover MCP servers. Instead of running DAB separately and then pointing VS Code at it, this configuration tells VS Code to launch DAB automatically (using `stdio` transport) when Copilot Chat needs to call MCP tools. The `--mcp-stdio` flag switches DAB into stdio MCP mode — it reads JSON-RPC messages from stdin and writes responses to stdout, which is exactly how VS Code's built-in MCP client communicates.
+
+This `stdio` transport is simpler than the HTTP tunnel approach from Exercise 4 because everything runs locally — VS Code and DAB are on the same machine, so no public URL is needed.
 
 1. Open a new terminal window.
 1. Create the `.vscode` folder and open it.
@@ -178,6 +223,8 @@ Azure SQL Hyperscale
 
 ## Task 5: Discover MCP Tools
 
+**What you will see:** DAB exposes each entity as a named MCP tool with a generated description and input schema. Copilot Chat reads those descriptions to understand what the tool does and when to call it. This is the MCP discovery mechanism in action — no hardcoded tool names in the prompt, just the model reading tool metadata and deciding how to use them.
+
 1. In the Visual Studio Code chat pane, start a new chat.
 1. Add `mcp.json` as context by selecting it.
 1. Enter the following prompt:
@@ -197,7 +244,7 @@ Azure SQL Hyperscale
 1. Ask the following question in chat:
 
     ```text
-    By leveraging MCP tool - Find the number of database records in FAQ_Content
+    By leveraging SQL Server MCP tool - Find the number of database records in FAQ_Content
     ```
 
 > [!Note]
@@ -229,6 +276,18 @@ Azure SQL Hyperscale
 
 ## Key Takeaway
 
-You used SQL MCP Server through Data API Builder to turn Azure SQL Hyperscale into an AI-ready, MCP-compatible data service without writing custom APIs.
+You used Data API Builder to turn Azure SQL Hyperscale into an AI-ready, MCP-compatible data service **without writing a single line of application code**. The entire integration is a JSON configuration file.
+
+Comparing the two approaches you have now used:
+
+| | Exercise 4 (Custom Python MCP) | Exercise 6 (DAB MCP) |
+|--|--------------------------------|---------------------|
+| **Code required** | Python server + SQL logic | JSON config only |
+| **Flexibility** | Full — any stored proc, any logic | Entity-based CRUD + filtering |
+| **Maintenance** | Update code when schema changes | Update config when schema changes |
+| **Best for** | Complex business logic, custom auth | Rapid data exposure, standard CRUD |
+| **Protocol** | HTTP (with dev tunnel for cloud agents) | stdio (local) or HTTP (deployed) |
+
+Both are valid and complementary. In a real system you might use DAB for standard entity access and a custom MCP server for complex operations like semantic search.
 
 Congratulations on completing this exercise! You now have a foundational understanding of how to expose Azure SQL Hyperscale to AI agents using standardized protocols, enabling powerful retrieval and grounding capabilities for your applications.

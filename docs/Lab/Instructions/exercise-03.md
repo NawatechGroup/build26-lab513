@@ -1,8 +1,22 @@
 # Exercise 3: Implement Retrieval-Augmented Generation (RAG) with Azure SQL Hyperscale
 
-In this exercise, you implement a simple Retrieval-Augmented Generation (RAG) workflow by using Azure SQL Hyperscale.
+## Why This Exercise Matters
 
-You will:
+Large language models are excellent at producing fluent, confident-sounding text. That fluency is also their biggest risk: when they do not know the answer, they often make one up. This is called **hallucination**, and in a customer support context it is dangerous — a model might invent a refund policy that does not exist or describe a process that is completely wrong.
+
+**Retrieval-Augmented Generation (RAG)** solves this by changing how you use the model. Instead of asking the model to answer from memory, you:
+1. **Retrieve** verified facts from your database (the FAQ content)
+2. **Augment** the model's input with those facts as context
+3. **Generate** an answer that is explicitly constrained to that context
+
+Think of it like an open-book exam versus a closed-book exam. In a closed-book exam the model relies on memorized (and potentially wrong) knowledge. In an open-book exam the model reads your data and answers based on that — and if the answer is not in the book, it says so.
+
+**Why implement RAG inside Azure SQL?** Most RAG tutorials place the retrieval in application code: query a vector database, build a prompt, call the model. Azure SQL Hyperscale lets you do all of this inside a SQL stored procedure using `sp_invoke_external_rest_endpoint`. This is powerful because:
+- The retrieval and prompt assembly logic lives in the database, close to the data
+- Any consumer (Python app, .NET service, Power BI, Foundry Agent) can call one stored procedure and get a grounded answer
+- The logic is version-controlled alongside the schema
+
+## What You Will Do
 
 - Pass a natural language question
 - Retrieve the most relevant FAQ entries from Azure SQL Hyperscale
@@ -11,7 +25,9 @@ You will:
 - Send the prompt to GPT-5-mini
 - Review the AI-generated answer
 
-By the end of this exercise, you will understand how Azure SQL Hyperscale supports retrieval and prompt orchestration in a RAG workflow.
+## By the End of This Exercise, You Will Understand
+
+How Azure SQL Hyperscale supports retrieval and prompt orchestration in a RAG workflow, and why grounding the model's input in verified data reduces hallucinations.
 
 ## Scenario
 
@@ -26,6 +42,14 @@ To accomplish this, the system must:
 1. Generate a grounded response by using GPT-5-mini.
 
 ## Task 1: Retrieve FAQ Data and Build the Grounding Context
+
+The script in this task does three things that are worth understanding separately:
+
+1. **Calls `dbo.SearchFAQ`** — This runs the semantic search you explored in Exercise 1. It returns the top 3 most relevant FAQ entries for the user's question.
+
+2. **Builds a context string with `STRING_AGG`** — The FAQ entries are concatenated into a single block of text. This is the "open book" the model will read. Notice the format: `Question: ... Answer: ...` repeated for each entry. Formatting matters — the model reads this as structured context, not raw data.
+
+3. **Builds a grounded prompt** — The prompt includes an explicit instruction: *"Use ONLY the context below to answer the question."* This instruction is what enforces grounding. Without it, the model would blend your FAQ data with its own training knowledge, which might be wrong or outdated.
 
 1. Open a new SQL query window in Visual Studio Code by selecting **View** > **Command Palette** > `MS SQL: New Query`.
 
@@ -90,12 +114,23 @@ To accomplish this, the system must:
 
 ## Task 2: Send the Prompt to GPT-5-mini
 
+> **Concept: `sp_invoke_external_rest_endpoint`**
+>
+> This is a built-in Azure SQL stored procedure that lets SQL call any HTTPS API and capture the response. It handles the HTTP request, passes headers and a JSON payload, and returns the raw JSON response. This means Azure SQL can call Azure OpenAI, logic apps, custom APIs, or any REST service — without requiring middleware or a separate application layer.
+>
+> In this task you use it to call the Azure OpenAI Chat Completions API. The payload follows the standard OpenAI messages format: a system message sets the assistant's behavior, and a user message contains the grounded prompt you assembled in Task 1. The model's response comes back as JSON, and `JSON_VALUE` extracts the answer text.
+
 1. Append a chat-completions call pattern to the same query window so Azure SQL Hyperscale can call the model with the grounded prompt.
+
+    > [!Important]
+    > Before running the script below, replace the two placeholder values with the credentials from your credential sheet:
+    > - `<YOUR_FOUNDRY_API_KEY>` → your **Microsoft Foundry API key**
+    > - `<YOUR_FOUNDRY_ENDPOINT>` → your **Microsoft Foundry endpoint** (the hostname only, e.g. `your-resource.openai.azure.com`)
 
     ```sql
     DECLARE @payload NVARCHAR(MAX);
     DECLARE @response NVARCHAR(MAX);
-    DECLARE @headers NVARCHAR(MAX) = N'{"api-key": "<YOUR_AZURE_AI_FOUNDRY_API_KEY>"}';
+    DECLARE @headers NVARCHAR(MAX) = N'{"api-key": "<YOUR_FOUNDRY_API_KEY>"}';
     
     SET @payload = N'{' +
     N'"messages":[' +
@@ -106,7 +141,7 @@ To accomplish this, the system must:
     
     EXEC sp_invoke_external_rest_endpoint
         @method = 'POST',
-        @url = N'https://<YOUR_AZURE_AI_FOUNDRY_ENDPOINT>/openai/deployments/gpt-5-mini/chat/completions?api-version=2024-10-21',
+        @url = N'https://<YOUR_FOUNDRY_ENDPOINT>/openai/deployments/gpt-5-mini/chat/completions?api-version=2024-10-21',
         @headers = @headers,
         @payload = @payload,
         @response = @response OUTPUT;
