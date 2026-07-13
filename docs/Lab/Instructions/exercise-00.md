@@ -100,6 +100,8 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
 
 - **`extensions.sh`** installs two VS Code extensions: the MSSQL extension (which lets you browse and query Azure SQL from inside VS Code) and the Azure Resource Groups extension (used for Azure resource visibility). Installing extensions through script ensures every lab participant has identical tooling.
 - **`sqldbhyperscale.sh`** creates your dedicated Azure SQL logical server and Hyperscale database, then runs three SQL scripts that: (1) create the `FAQ_Content` and `FAQ_Embeddings` tables, (2) seed FAQ question-and-answer pairs, and (3) generate 1,536-dimension vector embeddings via Azure OpenAI and store them. This is the data foundation that all subsequent exercises depend on.
+ - **`extensions.ps1`** installs two VS Code extensions: the MSSQL extension (which lets you browse and query Azure SQL from inside VS Code) and the Azure Resource Groups extension (used for Azure resource visibility). Installing extensions through script ensures every lab participant has identical tooling.
+ - **`sqlhyperscale.ps1`** creates your dedicated Azure SQL logical server and Hyperscale database, then runs three SQL scripts that: (1) create the `FAQ_Content` and `FAQ_Embeddings` tables, (2) seed FAQ question-and-answer pairs, and (3) generate 1,536-dimension vector embeddings via Azure Foundry and store them. This is the data foundation that all subsequent exercises depend on.
 
 Before proceeding with the exercises, run the provided installation scripts to ensure the remaining lab resources (VS Code extensions and Azure SQL) are created. 
 
@@ -110,28 +112,27 @@ Before proceeding with the exercises, run the provided installation scripts to e
     ```
     *(Use `az login --use-device-code` if prompted or if the browser doesn't open automatically).*
 
-2. Navigate to the installation scripts directory within your cloned repository and make them executable:
+2. Navigate to the installation scripts directory within your cloned repository (no need to make PowerShell scripts executable on Windows):
 
-    ```bash
+    ```powershell
     cd installation-script
-    chmod +x ./extensions.sh ./sqldbhyperscale.sh
     ```
 3. Install the required VS Code extensions (`ms-mssql.mssql` and `ms-azuretools.vscode-azureresourcegroups`):
 
-    ```bash
-    ./extensions.sh
+    ```powershell
+    .\extensions.ps1
     ```
-4. Provision the dedicated Azure SQL logical server and Hyperscale database. Use the values from your credential sheet for the three required parameters:
+4. Provision the dedicated Azure SQL logical server and Hyperscale database. Use the values from your credential sheet for the required parameters:
 
-    ```bash
-    ./sqldbhyperscale.sh \
-      --server-rg <YOUR_RESOURCE_GROUP> \
-      --ai-endpoint <YOUR_AI_ENDPOINT> \
-      --ai-key <YOUR_AI_KEY> \
-      --yes
-    ```
+        ```powershell
+        .\sqlhyperscale.ps1 \
+            --server-rg <YOUR_RESOURCE_GROUP> \
+            --ai-endpoint <YOUR_AI_ENDPOINT> \
+            --ai-key <YOUR_AI_KEY> \
+            --yes
+        ```
     > [!Note]
-    > Replace `<YOUR_RESOURCE_GROUP>`, `<YOUR_AI_ENDPOINT>`, and `<YOUR_AI_KEY>` with the values from your credential sheet. The script auto-generates the server name, database name, and admin credentials, then saves them all to `sqldbhyperscale.env`. Hyperscale creation can take 10–30 minutes depending on region capacity.
+    > Replace `<YOUR_RESOURCE_GROUP>`, `<YOUR_AI_ENDPOINT>`, and `<YOUR_AI_KEY>` with the values from your credential sheet. The script auto-generates the server name, database name, and admin credentials, then saves them to `sqldbhyperscale.env` (and also writes a PowerShell import script `sqldbhyperscale.env.ps1`). Hyperscale creation can take 10–30 minutes depending on region capacity.
 
 ## Task 4: Verify Local Files and Working Paths
 
@@ -144,8 +145,8 @@ While or after the script finishes, confirm that your local environment has the 
 
 1. Verify the VS Code extensions installed successfully:
 
-    ```bash
-    code --list-extensions | grep -E 'ms-mssql.mssql|ms-azuretools.vscode-azureresourcegroups'
+    ```powershell
+    code --list-extensions | Select-String -Pattern 'ms-mssql.mssql|ms-azuretools.vscode-azureresourcegroups'
     ```
 2. Confirm that the local MCP sample folder and the empty working folder for Exercise 6 exist. Run the following commands in PowerShell; each returns `True` if the path exists.
 
@@ -162,12 +163,14 @@ While or after the script finishes, confirm that your local environment has the 
 
 ## Task 5: Verify Azure SQL and Cloud Services
 
-1. **Identify your `{LAB_INSTANCE_ID}`:** Once `sqldbhyperscale.sh` completes, source the generated environment file and extract your unique instance identifier. It is the auto-generated suffix at the end of your SQL server name.
+1. **Identify your `{LAB_INSTANCE_ID}`:** Once `sqlhyperscale.ps1` completes, import the generated PowerShell env file and extract your unique instance identifier. It is the auto-generated suffix at the end of your SQL server name.
 
-    ```bash
-    source ./sqldbhyperscale.env
-    LAB_INSTANCE_ID="${SQL_SERVER##*-}"
-    echo "Your LAB_INSTANCE_ID: $LAB_INSTANCE_ID"
+    ```powershell
+    # dot-source the PowerShell env file to load variables into the session
+    . .\sqldbhyperscale.env.ps1
+
+    $LAB_INSTANCE_ID = ($env:SQL_SERVER -split '-')[-1]
+    Write-Output "Your LAB_INSTANCE_ID: $LAB_INSTANCE_ID"
     ```
 
     > [!Important]
@@ -175,12 +178,12 @@ While or after the script finishes, confirm that your local environment has the 
     >
     > For example, if the script generated `SQL_SERVER=faq-ai-server-a3f2b1`, your `{LAB_INSTANCE_ID}` is `a3f2b1`.
 
-1. **Verify Azure SQL:** Confirm the seeded data by connecting via `sqlcmd`:
+1. **Verify Azure SQL:** Confirm the seeded data by connecting via `sqlcmd` (PowerShell example uses environment variables loaded from the `.ps1` file):
 
-    ```bash
-    sqlcmd -S "tcp:${SQL_SERVER}.database.windows.net,1433" -d "${SQL_DB}" -U "${SQL_ADMIN}" -P "$SQL_PASSWORD" -C -Q "SET NOCOUNT ON; SELECT (SELECT COUNT(*) FROM dbo.FAQ_Content) AS faq_count, (SELECT COUNT(*) FROM dbo.FAQ_Embeddings) AS embedding_count;"
+    ```powershell
+    sqlcmd -S "tcp:$env:SQL_SERVER.database.windows.net,1433" -d "$env:SQL_DB" -U "$env:SQL_ADMIN" -P "$env:SQL_PASSWORD" -C -Q "SET NOCOUNT ON; SELECT (SELECT COUNT(*) FROM dbo.FAQ_Content) AS faq_count, (SELECT COUNT(*) FROM dbo.FAQ_Embeddings) AS embedding_count;"
     ```
-    *(The `source` command you ran above loaded the correct server name, database name, admin username, and password automatically.)*
+    *(The PowerShell env file you dot-sourced above loaded the correct server name, database name, admin username, and password into `$env:` variables.)*
 
 2. **Verify Microsoft Foundry:** Go back to `https://ai.azure.com/` and confirm you can access the `FAQ-Assistant-project`.
 3. **Verify Microsoft Fabric:** Go to `https://app.fabric.microsoft.com` and confirm you can create a new workspace. You will use a workspace named `FAQ-Workspace-{LAB_INSTANCE_ID}` in Exercise 5.
