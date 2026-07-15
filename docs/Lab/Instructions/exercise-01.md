@@ -61,7 +61,7 @@ You will use the **MSSQL extension for VS Code** rather than a standalone SQL cl
     | Server name | `faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net` |
     | Authentication type | `SQL Login` |
     | User name | `adminuser` |
-    | Password | `{SQL_PASSWORD}` (from `sqldbhyperscale.env`) |
+    | Password | `{SQL_PASSWORD}` (from `installation-script/sqldbhyperscale.env`) |
     | Database name | `faq-ai-assistant-db-{LAB_INSTANCE_ID}` |
     | Encrypt | `Mandatory` |
 

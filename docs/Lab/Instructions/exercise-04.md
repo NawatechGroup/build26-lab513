@@ -171,7 +171,7 @@ This is called **system-level grounding** — you are setting the rules of the g
 
 1. Select `Connect`.
 1. Select `Use in an agent`.
-1. Enter `faq-orchestrator-agent` as the agent name.
+1. Enter `faq-orchestrator-agent-{LAB_INSTANCE_ID}` as the agent name.
 1. Select `Create and open playground`.
 1. In the Instructions card, add guidance like the following:
 

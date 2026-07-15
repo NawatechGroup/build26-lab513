@@ -25,34 +25,16 @@ This exercise teaches that discipline. You will ask Copilot to generate a semant
 >
 > Copilot is fastest when you already know what correct looks like — this exercise gives you that baseline.
 
-## Task 1: Accept the GitHub Organization Invitation and Sign in to GitHub Copilot
+## Task 1: Confirm GitHub Copilot Is Active
 
 > [!Important]
-> You must **accept the GitHub organization invitation from your email before signing into VS Code**. The invitation is what grants your personal GitHub account access to GitHub Copilot through the workshop organization. Signing in before accepting means Copilot will not activate, and you will need to sign out and back in.
+> **Reminder:** Accepting the GitHub organization invitation and signing into VS Code with your GitHub account were covered in [Exercise 0, Task 2](../Instructions/exercise-00.md#task-2-accept-your-github-copilot-invitation-and-configure-vs-code). If you have not completed those steps yet, do so now before continuing.
+>
+> - Accept the invitation from your email inbox (subject: *"[GitHub] @nawatech has invited you to join the @NawatechGroup organization"*).
+> - Sign into VS Code using the **Accounts** icon in the lower-left activity bar → **Sign in with GitHub**.
+> - Visit `https://github.com/settings/copilot` to verify your account has an active Copilot subscription.
 
-**Step 1: Accept the invitation (if you have not already done so)**
-
-1. Check your personal email inbox for a message from GitHub with a subject similar to *"You've been invited to join [organization name] on GitHub"*.
-1. Open the email and select **View invitation**.
-1. On the GitHub invitation page, select **Accept invitation**.
-1. Confirm the organization now appears in your GitHub profile at `https://github.com/settings/organizations`.
-
-    > [!Note]
-    > If you do not see the invitation, check your spam folder. Contact the workshop organizer if it has not arrived. You can also visit `https://github.com/settings/copilot` to verify that your account has an active Copilot subscription after accepting.
-
-**Step 2: Sign in to VS Code with your GitHub account**
-
-1. In Visual Studio Code, select the **Accounts** icon in the lower-left activity bar.
-1. Select **Sign in with GitHub to use GitHub Copilot**.
-
-    ![Screenshot of Visual Studio Code status bar with the Sign in to use AI Features option highlighted](../media/github-sign-in-ai-features.png)
-
-1. Your browser opens to `github.com`. Sign in with your personal GitHub credentials.
-1. Select **Authorize Visual-Studio-Code**, then select **Open** (or **Allow** in the browser security dialog).
-
-    ![Screenshot of Visual Studio Code with the Continue with GitHub option highlighted](../media/github-authorize.png)
-
-1. Back in VS Code, confirm Copilot is active by opening Copilot Chat (`Ctrl+Alt+I`). You should see the chat pane without any sign-in prompt.
+1. Open Copilot Chat (`Ctrl+Alt+I`) and confirm the chat pane opens without a sign-in prompt. If you see a "No active Copilot subscription" message, sign out and sign back in to refresh the entitlement.
 
 ## Task 2: Generate a Semantic Search Query
 
@@ -67,14 +49,38 @@ This exercise teaches that discipline. You will ask Copilot to generate a semant
 1. Enter a prompt like the following:
 
     ```text
-    By using SQL Server and Microsoft Learn MCP tools, generate a T-SQL query for Azure SQL that returns the top 3 FAQ items most relevant to a customer question by using dbo.FAQ_Content and dbo.FAQ_Embeddings.
+    Generate a T-SQL query for Azure SQL that returns the top 3 FAQ items most relevant to a customer question by using dbo.FAQ_Content and dbo.FAQ_Embeddings.
     ```
 
-If you see a permission prompt, select `Allow in this Session`.
+    If you see a permission prompt, select `Allow in this Session`.
 
-![Screenshot of Visual Studio Code with a permission prompt for GitHub Copilot highlighted](../media/allow-in-session.png)
+    ![Screenshot of Visual Studio Code with a permission prompt for GitHub Copilot highlighted](../media/allow-in-session.png)
 
-1. Review the SQL returned by Copilot. Do not run it yet check whether it includes:
+1. Review the SQL returned by Copilot. Note any assumptions it made — for example, column names it guessed, embedding logic it invented, or placeholders it left in.
+
+1. Now try a more structured prompt that applies **prompt engineering** principles. In Copilot Chat, enter this prompt instead:
+
+    ```text
+    I need you to generate a T-SQL query for Azure SQL that returns the top 3 FAQ items most relevant to a customer's question, using semantic/vector search against dbo.FAQ_Content and dbo.FAQ_Embeddings.
+
+    IMPORTANT: You must use the connected mssql tool to inspect the actual database before writing any code. Do not guess, assume, or invent any table names, column names, data types, or existing infrastructure (such as embedding endpoints, stored procedures, or vector columns).
+
+    Please follow these steps, using the mssql tool at each step:
+       - Accept a customer question as an input variable
+       - Convert that question into an embedding vector using a REST call to an Azure AI Foundry embedding model deployment endpoint (put endpoint and credentials as placeholders in the code)
+       - Compare that embedding against the embedding column in FAQ_Embeddings using an appropriate vector distance/similarity function
+       - Join back to FAQ_Content to return the top 3 most relevant FAQ rows with all relevant display columns
+    ```
+
+1. Compare the two results side by side. Notice the differences that the more structured prompt produces:
+
+    - Did the second prompt cause Copilot to inspect the actual schema first, instead of guessing column names?
+    - Does the second result correctly reference the embedding endpoint as a placeholder rather than hardcoding a value?
+    - Is the join logic and `VECTOR_DISTANCE` usage more accurate?
+
+    > **Prompt Engineering Takeaway:** Vague prompts produce generic drafts. Prompts that specify *what to inspect*, *what not to assume*, and *the exact steps to follow* give Copilot the constraints it needs to produce code that is closer to production-ready. The second prompt is longer, but the review effort it saves is larger.
+
+1. Review the SQL returned by the second prompt. Do not run it yet — check whether it includes:
 
     - `dbo.FAQ_Content`
     - `dbo.FAQ_Embeddings`
@@ -88,8 +94,8 @@ If you see a permission prompt, select `Allow in this Session`.
     - Look for similarities and differences.
     - Notice whether Copilot used the correct `VECTOR_DISTANCE` argument order.
 
-> [!Important]
-> Azure SQL expects the metric as the first argument to `VECTOR_DISTANCE`, followed by the two vector values. If needed, keep the lab's validated query as the final version.
+    > [!Important]
+    > Azure SQL expects the metric as the first argument to `VECTOR_DISTANCE`, followed by the two vector values. If needed, keep the lab's validated query as the final version.
 
 1. Ask Copilot to Explain the Query. In Copilot Chat, enter a prompt like the following:
 
@@ -118,7 +124,7 @@ If you see a permission prompt, select `Allow in this Session`.
 1. In Copilot Chat, enter a prompt like the following:
 
     ```text
-    By using SQL Server tool, review the schema for dbo.FAQ_Content and dbo.FAQ_Embeddings and suggest improvements.
+    By using mssql tool, review the schema for dbo.FAQ_Content and dbo.FAQ_Embeddings and suggest improvements.
     ```
 
 1. Review the suggestions. Look for ideas such as:
@@ -140,8 +146,8 @@ If you see a permission prompt, select `Allow in this Session`.
 
 1. Review the stored procedure returned by Copilot.
 
-> [!Note]
-> You do not need to deploy it yet. This step demonstrates how Copilot can accelerate repeatable SQL authoring patterns.
+    > [!Note]
+    > You do not need to deploy it yet. This step demonstrates how Copilot can accelerate repeatable SQL authoring patterns.
 
 ## Task 5: Wrap Up
 

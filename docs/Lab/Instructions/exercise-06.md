@@ -51,12 +51,19 @@ Azure SQL Hyperscale
 You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-manifest`) locks the version to this project, so anyone who clones the repo gets the same version with `dotnet tool restore`.
 
 1. Return to Visual Studio Code and stop the Python server by pressing `Ctrl+C` in the terminal window where it is running.
-1. Create a working folder.
+1. Create a working folder and open it in Visual Studio Code.
 
     ```powershell
     mkdir C:\LabFiles\sql-mcp-lab
     cd C:\LabFiles\sql-mcp-lab
     ```
+
+    ```powershell
+    code -r C:\LabFiles\sql-mcp-lab
+    ```
+
+    > [!Note]
+    > The `-r` flag reuses the current VS Code window. Once the folder opens, reopen a terminal inside VS Code (`Ctrl` + `` ` ``) and navigate back to `C:\LabFiles\sql-mcp-lab` before continuing.
 
 1. Initialize a tool manifest.
 
@@ -91,7 +98,7 @@ You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-ma
 1. Create a new file and select **Open**.
 
     ```powershell
-    code C:\LabFiles\sql-mcp-lab\dab-config.json
+    code dab-config.json
     ```
 
 1. Add a DAB configuration that:
@@ -139,14 +146,6 @@ You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-ma
       }
     }
     ```
-              "role": "anonymous",
-              "actions": ["read"]
-            }
-          ]
-        }
-      }
-    }
-    ```
 
 1. Save the file.
 
@@ -181,11 +180,11 @@ You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-ma
 This `stdio` transport is simpler than the HTTP tunnel approach from Exercise 4 because everything runs locally — VS Code and DAB are on the same machine, so no public URL is needed.
 
 1. Open a new terminal window.
-1. Create the `.vscode` folder and open it.
+1. Create the `.vscode` folder and open a new file for the MCP configuration.
 
     ```powershell
-    mkdir C:\LabFiles\sql-mcp-lab\.vscode
-    code C:\LabFiles\sql-mcp-lab\.vscode
+    mkdir .vscode
+    code .vscode\mcp.json
     ```
 
 1. Add the following content to the `mcp.json` file.

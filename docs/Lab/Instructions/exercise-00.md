@@ -48,7 +48,7 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
     | **Your personal GitHub account** | GitHub Copilot sign-in in VS Code — used in Exercise 2 |
 
     > [!Note]
-    > Your SQL server name, database name, SQL admin username, and SQL admin password are **automatically generated** by the provisioning script and saved to `sqldbhyperscale.env`. You do not pre-configure these — they are ready after the script completes in Task 3.
+    > Your SQL server name, database name, SQL admin username, and SQL admin password are **automatically generated** by the provisioning script and saved to `installation-script/sqldbhyperscale.env`. You do not pre-configure these — they are ready after the script completes in Task 3.
 
 2. Connect to the VM using your local Remote Desktop Protocol (RDP) client with the VM username and password from your credential sheet.
 3. Confirm that you can open the following in the VM's browser:
@@ -61,8 +61,11 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
 > **Accept your GitHub organization invitation before signing into VS Code with GitHub.** The workshop organizer has invited your personal GitHub account to an organization that provides GitHub Copilot access. If you sign into VS Code before accepting the invitation, Copilot may not activate — and you would need to sign out and back in again to pick up the benefit.
 
 1. **Accept the GitHub invitation (do this first):**
-    1. Check your personal email inbox for an invitation from GitHub with a subject similar to *"You've been invited to join [organization name] on GitHub"*.
-    1. Open the email and select **View invitation**.
+    1. Check your personal email inbox for an invitation from GitHub with a subject similar to *"[GitHub] @nawatech has invited you to join the @NawatechGroup organization"*.
+
+         ![GitHub invitation screenshot](../media/github-invitation.png)
+    
+    1. Open the email and select **Join @NawatechGroup**.
     1. On the GitHub invitation page, select **Accept invitation**.
     1. Confirm the organization appears in your GitHub profile at `https://github.com/settings/organizations`.
 
@@ -70,19 +73,21 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
     > If you do not see the invitation, check your spam folder. Contact the workshop organizer if it has not arrived.
 
 1. Open **Visual Studio Code** from the desktop or start menu.
+1. Sign in to VS Code with your GitHub account:
+    1. Select the **Accounts** icon in the bottom-left Activity Bar (person silhouette).
+    1. Select **Sign in with GitHub** and follow the browser prompts to authorize VS Code.
+    1. Once signed in, confirm that **GitHub Copilot** and **GitHub Copilot Chat** appear as active extensions in the Extensions view (`Ctrl`+`Shift`+`X`).
+
+    > [!Note]
+    > Because you accepted the organization invitation in the previous step, Copilot should activate automatically. If you see a "No active Copilot subscription" message, sign out and sign in again to refresh the entitlement.
+
 1. Open a new terminal in VS Code (`Ctrl` + `` ` `` or **Terminal > New Terminal**).
 1. Clone the lab repository:
 
     ```bash
-    git clone [https://github.com/YOUR-ORG/YOUR-LAB-REPO.git](https://github.com/YOUR-ORG/YOUR-LAB-REPO.git) C:\LabFiles\lab-repo
+    git clone https://github.com/NawatechGroup/build26-lab513.git C:\build26-lab513
     ```
-1. Open the cloned folder in VS Code (**File > Open Folder** and select `C:\LabFiles\lab-repo`).
-
-    > [!Tip]
-    > **Why these specific tools?**
-    > - **Python + pip** — The custom MCP server in Exercise 4 is a Python script. pip installs its dependencies.
-    > - **dotnet** — Data API Builder (DAB) in Exercise 6 is a .NET global tool. You install and run it with the `dotnet` CLI.
-    > - **devtunnel** — When the MCP server runs on your local machine, Microsoft Foundry (a cloud service) cannot reach `localhost`. Dev Tunnel creates a secure HTTPS forwarding URL that bridges your local process to the public internet.
+1. Open the cloned folder in VS Code (**File > Open Folder** and select `C:\build26-lab513`).
 
 1. Confirm that the following tools are pre-installed on the lab machine:
 
@@ -94,14 +99,18 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
     ```
     *(If any command fails, install the missing tool before moving to the next task.)*
 
+    > [!Tip]
+    > **Why these specific tools?**
+    > - **Python + pip** — The custom MCP server in Exercise 4 is a Python script. pip installs its dependencies.
+    > - **dotnet** — Data API Builder (DAB) in Exercise 6 is a .NET global tool. You install and run it with the `dotnet` CLI.
+    > - **devtunnel** — When the MCP server runs on your local machine, Microsoft Foundry (a cloud service) cannot reach `localhost`. Dev Tunnel creates a secure HTTPS forwarding URL that bridges your local process to the public internet.
+
 ## Task 3: Run the Environment Installation Scripts
 
 **What these scripts do and why they matter:**
 
-- **`extensions.sh`** installs two VS Code extensions: the MSSQL extension (which lets you browse and query Azure SQL from inside VS Code) and the Azure Resource Groups extension (used for Azure resource visibility). Installing extensions through script ensures every lab participant has identical tooling.
-- **`sqldbhyperscale.sh`** creates your dedicated Azure SQL logical server and Hyperscale database, then runs three SQL scripts that: (1) create the `FAQ_Content` and `FAQ_Embeddings` tables, (2) seed FAQ question-and-answer pairs, and (3) generate 1,536-dimension vector embeddings via Azure OpenAI and store them. This is the data foundation that all subsequent exercises depend on.
- - **`extensions.ps1`** installs two VS Code extensions: the MSSQL extension (which lets you browse and query Azure SQL from inside VS Code) and the Azure Resource Groups extension (used for Azure resource visibility). Installing extensions through script ensures every lab participant has identical tooling.
- - **`sqlhyperscale.ps1`** creates your dedicated Azure SQL logical server and Hyperscale database, then runs three SQL scripts that: (1) create the `FAQ_Content` and `FAQ_Embeddings` tables, (2) seed FAQ question-and-answer pairs, and (3) generate 1,536-dimension vector embeddings via Azure Foundry and store them. This is the data foundation that all subsequent exercises depend on.
+- **`extensions.ps1`** installs two VS Code extensions: the MSSQL extension (which lets you browse and query Azure SQL from inside VS Code) and the Azure Resource Groups extension (used for Azure resource visibility). Installing extensions through script ensures every lab participant has identical tooling.
+- **`sqlhyperscale.ps1`** creates your dedicated Azure SQL logical server and Hyperscale database, then runs three SQL scripts that: (1) create the `FAQ_Content` and `FAQ_Embeddings` tables, (2) seed FAQ question-and-answer pairs, and (3) generate 1,536-dimension vector embeddings via Azure Foundry and store them. This is the data foundation that all subsequent exercises depend on.
 
 Before proceeding with the exercises, run the provided installation scripts to ensure the remaining lab resources (VS Code extensions and Azure SQL) are created. 
 
@@ -125,10 +134,10 @@ Before proceeding with the exercises, run the provided installation scripts to e
 4. Provision the dedicated Azure SQL logical server and Hyperscale database. Use the values from your credential sheet for the required parameters:
 
         ```powershell
-        .\sqlhyperscale.ps1 \
-            --server-rg <YOUR_RESOURCE_GROUP> \
-            --ai-endpoint <YOUR_AI_ENDPOINT> \
-            --ai-key <YOUR_AI_KEY> \
+        .\sqlhyperscale.ps1 `
+            --server-rg <YOUR_RESOURCE_GROUP> `
+            --ai-endpoint <YOUR_AI_ENDPOINT> `
+            --ai-key <YOUR_AI_KEY> `
             --yes
         ```
     > [!Note]

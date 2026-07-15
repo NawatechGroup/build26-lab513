@@ -275,8 +275,8 @@ function Render-BootstrapSql {
   $embeddingOut = Join-Path $GeneratedDir '03_generate_embeddings.sql'
   $searchOut = Join-Path $GeneratedDir '04_search_proc.sql'
 
-  $embeddingContent = (Get-Content -LiteralPath $embeddingSrc -Raw).Replace('<YOUR_AZURE_FOUNDRY_API_KEY>', $ApiKey).Replace('<YOUR_AZURE_FOUNDRY_ENDPOINT>', $EndpointHost)
-  $searchContent = (Get-Content -LiteralPath $searchSrc -Raw).Replace('<YOUR_AZURE_FOUNDRY_API_KEY>', $ApiKey).Replace('<YOUR_AZURE_FOUNDRY_ENDPOINT>', $EndpointHost)
+  $embeddingContent = (Get-Content -LiteralPath $embeddingSrc -Raw).Replace('<YOUR_FOUNDRY_API_KEY>', $ApiKey).Replace('<YOUR_FOUNDRY_ENDPOINT>', $EndpointHost)
+  $searchContent = (Get-Content -LiteralPath $searchSrc -Raw).Replace('<YOUR_FOUNDRY_API_KEY>', $ApiKey).Replace('<YOUR_FOUNDRY_ENDPOINT>', $EndpointHost)
 
   Set-Content -LiteralPath $embeddingOut -Value $embeddingContent -NoNewline
   Set-Content -LiteralPath $searchOut -Value $searchContent -NoNewline
