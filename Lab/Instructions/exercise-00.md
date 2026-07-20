@@ -47,8 +47,8 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
     | **Microsoft Foundry API key** | `--ai-key` parameter in the provisioning script; also used directly in Exercise 3 and Exercise 4 |
     | **Your personal GitHub account** | GitHub Copilot sign-in in VS Code — used in Exercise 2 |
 
-    > [!Note]
-    > Your SQL server name, database name, SQL admin username, and SQL admin password are **automatically generated** by the provisioning script and saved to `installation-script/sqldbhyperscale.env`. You do not pre-configure these — they are ready after the script completes in Task 3.
+> [!Note]
+> Your SQL server name, database name, SQL admin username, and SQL admin password are **automatically generated** by the provisioning script and saved to `installation-script/sqldbhyperscale.env`. You do not pre-configure these — they are ready after the script completes in Task 3.
 
 2. Connect to the VM using your local Remote Desktop Protocol (RDP) client with the VM username and password from your credential sheet.
 3. Confirm that you can open the following in the VM's browser:
@@ -69,27 +69,27 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
     1. On the GitHub invitation page, select **Accept invitation**.
     1. Confirm the organization appears in your GitHub profile at `https://github.com/settings/organizations`.
 
-    > [!Note]
-    > If you do not see the invitation, check your spam folder. Contact the workshop organizer if it has not arrived.
+> [!Note]
+> If you do not see the invitation, check your spam folder. Contact the workshop organizer if it has not arrived.
 
-1. Open **Visual Studio Code** from the desktop or start menu.
-1. Sign in to VS Code with your GitHub account:
+2. Open **Visual Studio Code** from the desktop or start menu.
+3. Sign in to VS Code with your GitHub account:
     1. Select the **Accounts** icon in the bottom-left Activity Bar (person silhouette).
     1. Select **Sign in with GitHub** and follow the browser prompts to authorize VS Code.
     1. Once signed in, confirm that **GitHub Copilot** and **GitHub Copilot Chat** appear as active extensions in the Extensions view (`Ctrl`+`Shift`+`X`).
 
-    > [!Note]
-    > Because you accepted the organization invitation in the previous step, Copilot should activate automatically. If you see a "No active Copilot subscription" message, sign out and sign in again to refresh the entitlement.
+> [!Note]
+> Because you accepted the organization invitation in the previous step, Copilot should activate automatically. If you see a "No active Copilot subscription" message, sign out and sign in again to refresh the entitlement.
 
-1. Open a new terminal in VS Code (`Ctrl` + `` ` `` or **Terminal > New Terminal**).
-1. Clone the lab repository:
+4. Open a new terminal in VS Code (`Ctrl` + `` ` `` or **Terminal > New Terminal**).
+5. Clone the lab repository:
 
     ```bash
     git clone https://github.com/NawatechGroup/build26-lab513.git C:\build26-lab513
     ```
-1. Open the cloned folder in VS Code (**File > Open Folder** and select `C:\build26-lab513`).
+6. Open the cloned folder in VS Code (**File > Open Folder** and select `C:\build26-lab513`).
 
-1. Confirm that the following tools are pre-installed on the lab machine:
+7. Confirm that the following tools are pre-installed on the lab machine:
 
     ```powershell
     python --version
@@ -99,11 +99,11 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
     ```
     *(If any command fails, install the missing tool before moving to the next task.)*
 
-    > [!Tip]
-    > **Why these specific tools?**
-    > - **Python + pip** — The custom MCP server in Exercise 4 is a Python script. pip installs its dependencies.
-    > - **dotnet** — Data API Builder (DAB) in Exercise 6 is a .NET global tool. You install and run it with the `dotnet` CLI.
-    > - **devtunnel** — When the MCP server runs on your local machine, Microsoft Foundry (a cloud service) cannot reach `localhost`. Dev Tunnel creates a secure HTTPS forwarding URL that bridges your local process to the public internet.
+> [!Tip]
+> **Why these specific tools?**
+> - **Python + pip** — The custom MCP server in Exercise 4 is a Python script. pip installs its dependencies.
+> - **dotnet** — Data API Builder (DAB) in Exercise 6 is a .NET global tool. You install and run it with the `dotnet` CLI.
+> - **devtunnel** — When the MCP server runs on your local machine, Microsoft Foundry (a cloud service) cannot reach `localhost`. Dev Tunnel creates a secure HTTPS forwarding URL that bridges your local process to the public internet.
 
 ## Task 3: Run the Environment Installation Scripts
 
@@ -140,8 +140,8 @@ Before proceeding with the exercises, run the provided installation scripts to e
             --ai-key <YOUR_AI_KEY> `
             --yes
         ```
-    > [!Note]
-    > Replace `<YOUR_RESOURCE_GROUP>`, `<YOUR_AI_ENDPOINT>`, and `<YOUR_AI_KEY>` with the values from your credential sheet. The script auto-generates the server name, database name, and admin credentials, then saves them to `sqldbhyperscale.env` (and also writes a PowerShell import script `sqldbhyperscale.env.ps1`). Hyperscale creation can take 10–30 minutes depending on region capacity.
+> [!Note]
+> Replace `<YOUR_RESOURCE_GROUP>`, `<YOUR_AI_ENDPOINT>`, and `<YOUR_AI_KEY>` with the values from your credential sheet. The script auto-generates the server name, database name, and admin credentials, then saves them to `sqldbhyperscale.env` (and also writes a PowerShell import script `sqldbhyperscale.env.ps1`). Hyperscale creation can take 10–30 minutes depending on region capacity.
 
 ## Task 4: Verify Local Files and Working Paths
 
@@ -182,10 +182,10 @@ While or after the script finishes, confirm that your local environment has the 
     Write-Output "Your LAB_INSTANCE_ID: $LAB_INSTANCE_ID"
     ```
 
-    > [!Important]
-    > **Write down this value.** You will substitute `{LAB_INSTANCE_ID}` with it throughout the remaining exercises when entering connection strings, naming dev tunnel resources, Fabric workspaces, and Foundry tools.
-    >
-    > For example, if the script generated `SQL_SERVER=faq-ai-server-a3f2b1`, your `{LAB_INSTANCE_ID}` is `a3f2b1`.
+> [!Important]
+> **Write down this value.** You will substitute `{LAB_INSTANCE_ID}` with it throughout the remaining exercises when entering connection strings, naming dev tunnel resources, Fabric workspaces, and Foundry tools.
+>
+> For example, if the script generated `SQL_SERVER=faq-ai-server-a3f2b1`, your `{LAB_INSTANCE_ID}` is `a3f2b1`.
 
 1. **Verify Azure SQL:** Confirm the seeded data by connecting via `sqlcmd` (PowerShell example uses environment variables loaded from the `.ps1` file):
 
