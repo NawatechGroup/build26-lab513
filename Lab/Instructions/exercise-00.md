@@ -161,7 +161,7 @@ While or after the script finishes, confirm that your local environment has the 
 
 1. Verify the required VS Code extensions are pre-installed:
     1. Open the **Extensions** view (`Ctrl+Shift+X`).
-    1. Search for `ms-mssql` and confirm **SQL Server (mssql)** shows as installed.
+    1. Search for `SQL Server` and confirm **SQL Server (mssql)** shows as installed.
     1. Search for `GitHub Copilot` and confirm **GitHub Copilot Chat** shows as installed.
 
 > [!Note]
