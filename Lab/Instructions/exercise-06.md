@@ -51,19 +51,21 @@ Azure SQL Hyperscale
 You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-manifest`) locks the version to this project, so anyone who clones the repo gets the same version with `dotnet tool restore`.
 
 1. Return to Visual Studio Code and stop the Python server by pressing `Ctrl+C` in the terminal window where it is running.
-1. Create a working folder and open it in Visual Studio Code.
-
-    ```powershell
-    mkdir C:\LabFiles\sql-mcp-lab
-    cd C:\LabFiles\sql-mcp-lab
-    ```
-
-    ```powershell
-    code -r C:\LabFiles\sql-mcp-lab
-    ```
+1. Open the working folder in Visual Studio Code.
+    1. Select **File** > **Open Folder**.
+    1. Navigate to `C:\LabFiles\sql-mcp-lab` and select **Select Folder**.
 
     > [!Note]
-    > The `-r` flag reuses the current VS Code window. Once the folder opens, reopen a terminal inside VS Code (`Ctrl` + `` ` ``) and navigate back to `C:\LabFiles\sql-mcp-lab` before continuing.
+    > On the lab VM this folder may already exist (created by the provisioning script) or it may need to be created manually. If `C:\LabFiles\sql-mcp-lab` does not exist, create it and copy the sample files from the cloned repository before continuing.
+    >
+    > Example PowerShell commands to create and populate the folder (run in an elevated PowerShell prompt if required):
+    >
+    > ```powershell
+    > # Create the working folder if it doesn't exist
+    > New-Item -Path 'C:\LabFiles\sql-mcp-lab' -ItemType Directory -Force
+    > ```
+    >
+    > After ensuring the folder exists, open it in VS Code and confirm the working directory is `C:\LabFiles\sql-mcp-lab` before continuing.
 
 1. Initialize a tool manifest.
 
@@ -95,11 +97,9 @@ You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-ma
 
 > **Why `faqContent` and not `FAQ_Content`?** DAB entity names become part of the API and MCP tool names. Camel case (`faqContent`) is a convention for JSON-based APIs. The underlying SQL table is still `dbo.FAQ_Content` — the mapping is explicit in the `source.object` field.
 
-1. Create a new file and select **Open**.
-
-    ```powershell
-    code dab-config.json
-    ```
+1. Create a new file named `dab-config.json`:
+    1. In the **Explorer** view (`Ctrl+Shift+E`), right-click in the file list and select **New File**.
+    1. Type `dab-config.json` and press **Enter**. The file opens automatically in the editor.
 
 1. Add a DAB configuration that:
 
@@ -109,7 +109,7 @@ You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-ma
 - Runs the host in `development` mode
 - Exposes `dbo.FAQ_Content` as a read-only entity for MCP use
 
-1. Use a configuration like the following. Replace `{LAB_INSTANCE_ID}` with your value from Exercise 0, and `{SQL_PASSWORD}` with the `SQL_PASSWORD` value from `sqldbhyperscale.env`.
+1. Use a configuration like the following. Replace `{LAB_INSTANCE_ID}` and `{SQL_PASSWORD}` with the values from `C:\creds.txt` (run `Get-Content C:\creds.txt` in a terminal to retrieve them).
 
     ```json
     {
@@ -179,13 +179,11 @@ You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-ma
 
 This `stdio` transport is simpler than the HTTP tunnel approach from Exercise 4 because everything runs locally — VS Code and DAB are on the same machine, so no public URL is needed.
 
-1. Open a new terminal window.
-1. Create the `.vscode` folder and open a new file for the MCP configuration.
-
-    ```powershell
-    mkdir .vscode
-    code .vscode\mcp.json
-    ```
+1. Create the `.vscode` folder and the MCP configuration file using the **Explorer** view (`Ctrl+Shift+E`):
+    1. Right-click in the file list and select **New Folder**.
+    1. Type `.vscode` and press **Enter**.
+    1. Right-click the `.vscode` folder and select **New File**.
+    1. Type `mcp.json` and press **Enter**. The file opens automatically in the editor.
 
 1. Add the following content to the `mcp.json` file.
 

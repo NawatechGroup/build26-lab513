@@ -11,7 +11,7 @@ Think of this exercise as a **preflight checklist**: pilots run one not because 
 - Connect to your lab VM via RDP
 - Confirm your lab credentials and accounts
 - Clone the lab repository and verify local tools
-- Run the installation scripts to install VS Code extensions and provision Azure SQL Hyperscale
+- Run the provisioning script to create Azure SQL Hyperscale and seed it with FAQ data
 - Verify access to Azure SQL Hyperscale, Microsoft Foundry, and Microsoft Fabric
 
 ## What Will Be Ready When You Finish
@@ -34,7 +34,7 @@ By the end of this exercise you will have:
 
 ## Task 1: Connect to the VM and Confirm Credentials
 
-Your workshop organizer provides a **credential sheet** at the start of the session. There is no lab portal to log into — all values you need are printed on that sheet.
+Your workshop organizer provides a **credential sheet** at the start of the session. Some credentials are on the sheet; others are written to `C:\creds.txt` automatically after the provisioning script runs in Task 3.
 
 1. Locate your credential sheet and confirm it contains the following:
 
@@ -42,13 +42,23 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
     | --- | --- |
     | **VM username and password** | Log into the Windows lab VM via RDP |
     | **Microsoft Entra ID account** | `az login` (Azure CLI to provision Azure SQL), Microsoft Foundry (`https://ai.azure.com/`), Microsoft Fabric (`https://app.fabric.microsoft.com`), and dev tunnel sign-in in Exercise 4 |
-    | **Resource group name** | `--server-rg` parameter in the provisioning script |
-    | **Microsoft Foundry endpoint** | `--ai-endpoint` parameter in the provisioning script; also used directly in Exercise 3 and Exercise 4 |
-    | **Microsoft Foundry API key** | `--ai-key` parameter in the provisioning script; also used directly in Exercise 3 and Exercise 4 |
+    | **Resource group name** | `--RG` parameter in the provisioning script |
     | **Your personal GitHub account** | GitHub Copilot sign-in in VS Code — used in Exercise 2 |
 
 > [!Note]
-> Your SQL server name, database name, SQL admin username, and SQL admin password are **automatically generated** by the provisioning script and saved to `installation-script/sqldbhyperscale.env`. You do not pre-configure these — they are ready after the script completes in Task 3.
+> The following values are **automatically generated** by the provisioning script and written to `C:\creds.txt`. You do not pre-configure these — they are ready after the script completes in Task 3.
+>
+> | Variable | Description |
+> | --- | --- |
+> | `SQL_SERVER` | Azure SQL logical server hostname |
+> | `SQL_DB` | Database name |
+> | `SQL_ADMIN` | SQL admin username |
+> | `SQL_PASSWORD` | SQL admin password |
+> | `LAB_INSTANCE_ID` | Unique suffix used in all resource names and tunnel IDs |
+> | `FOUNDRY_ENDPOINT` | Microsoft Foundry (Azure OpenAI) endpoint hostname |
+> | `FOUNDRY_API_KEY` | Microsoft Foundry API key |
+>
+> Run `Get-Content C:\creds.txt` in any terminal to display all values.
 
 2. Connect to the VM using your local Remote Desktop Protocol (RDP) client with the VM username and password from your credential sheet.
 3. Confirm that you can open the following in the VM's browser:
@@ -81,15 +91,23 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
 > [!Note]
 > Because you accepted the organization invitation in the previous step, Copilot should activate automatically. If you see a "No active Copilot subscription" message, sign out and sign in again to refresh the entitlement.
 
-4. Open a new terminal in VS Code (`Ctrl` + `` ` `` or **Terminal > New Terminal**).
-5. Clone the lab repository:
+4. Open the **Source Control** view by selecting the Source Control icon in the Activity Bar or pressing `Ctrl+Shift+G`.
+5. Select **Clone Repository**.
+6. Enter `https://github.com/NawatechGroup/build26-lab513.git` and press **Enter**.
+7. Select `C:\` as the destination and select **Select Repository Location**.
+8. When prompted, select **Open** to open the cloned folder in VS Code.
 
-    ```bash
-    git clone https://github.com/NawatechGroup/build26-lab513.git C:\build26-lab513
-    ```
-6. Open the cloned folder in VS Code (**File > Open Folder** and select `C:\build26-lab513`).
+Alternatively, clone from the command line:
 
-7. Confirm that the following tools are pre-installed on the lab machine:
+```powershell
+# Clone directly to C:\build26-lab513
+git clone https://github.com/NawatechGroup/build26-lab513.git C:\build26-lab513
+
+# Open the cloned folder in VS Code
+code C:\build26-lab513
+```
+
+9. Confirm that the following tools are pre-installed on the lab machine:
 
     ```powershell
     python --version
@@ -105,43 +123,32 @@ Your workshop organizer provides a **credential sheet** at the start of the sess
 > - **dotnet** — Data API Builder (DAB) in Exercise 6 is a .NET global tool. You install and run it with the `dotnet` CLI.
 > - **devtunnel** — When the MCP server runs on your local machine, Microsoft Foundry (a cloud service) cannot reach `localhost`. Dev Tunnel creates a secure HTTPS forwarding URL that bridges your local process to the public internet.
 
-## Task 3: Run the Environment Installation Scripts
+## Task 3: Provision Azure SQL Hyperscale
 
-**What these scripts do and why they matter:**
+**`sqlhyperscale.ps1`** creates your dedicated Azure SQL logical server and Hyperscale database, then runs three SQL scripts that: (1) create the `FAQ_Content` and `FAQ_Embeddings` tables, (2) seed FAQ question-and-answer pairs, and (3) generate 1,536-dimension vector embeddings via Azure Foundry and store them. This is the data foundation that all subsequent exercises depend on.
 
-- **`extensions.ps1`** installs two VS Code extensions: the MSSQL extension (which lets you browse and query Azure SQL from inside VS Code) and the Azure Resource Groups extension (used for Azure resource visibility). Installing extensions through script ensures every lab participant has identical tooling.
-- **`sqlhyperscale.ps1`** creates your dedicated Azure SQL logical server and Hyperscale database, then runs three SQL scripts that: (1) create the `FAQ_Content` and `FAQ_Embeddings` tables, (2) seed FAQ question-and-answer pairs, and (3) generate 1,536-dimension vector embeddings via Azure Foundry and store them. This is the data foundation that all subsequent exercises depend on.
-
-Before proceeding with the exercises, run the provided installation scripts to ensure the remaining lab resources (VS Code extensions and Azure SQL) are created. 
-
-1. Ensure you are logged into Azure CLI by running the following command in the terminal:
-
-    ```bash
-    az login
-    ```
-    *(Use `az login --use-device-code` if prompted or if the browser doesn't open automatically).*
-
-2. Navigate to the installation scripts directory within your cloned repository (no need to make PowerShell scripts executable on Windows):
+1. Sign in to Azure from the terminal using device-code authentication (recommended for lab VMs without a browser session):
 
     ```powershell
-    cd installation-script
+    az login --use-device-code
     ```
-3. Install the required VS Code extensions (`ms-mssql.mssql` and `ms-azuretools.vscode-azureresourcegroups`):
+
+    Confirm your subscription appears in `az account list` or in the Azure extension.
+
+2. Navigate to the installation scripts folder:
 
     ```powershell
-    .\extensions.ps1
+    cd C:\installation-script
     ```
-4. Provision the dedicated Azure SQL logical server and Hyperscale database. Use the values from your credential sheet for the required parameters:
 
-        ```powershell
-        .\sqlhyperscale.ps1 `
-            --server-rg <YOUR_RESOURCE_GROUP> `
-            --ai-endpoint <YOUR_AI_ENDPOINT> `
-            --ai-key <YOUR_AI_KEY> `
-            --yes
-        ```
+3. Provision the dedicated Azure SQL logical server and Hyperscale database. When running the script on the lab VM you only need to pass your resource group (`--RG`):
+
+    ```powershell
+    .\sqlhyperscale.ps1 --RG <YOUR_RESOURCE_GROUP> --yes
+    ```
+
 > [!Note]
-> Replace `<YOUR_RESOURCE_GROUP>`, `<YOUR_AI_ENDPOINT>`, and `<YOUR_AI_KEY>` with the values from your credential sheet. The script auto-generates the server name, database name, and admin credentials, then saves them to `sqldbhyperscale.env` (and also writes a PowerShell import script `sqldbhyperscale.env.ps1`). Hyperscale creation can take 10–30 minutes depending on region capacity.
+> Replace `<YOUR_RESOURCE_GROUP>` with the value from your credential sheet. The script auto-generates the server name, database name, and admin credentials, then writes the outputs to `C:\creds.txt`. Hyperscale creation can take 10–30 minutes depending on region capacity.
 
 ## Task 4: Verify Local Files and Working Paths
 
@@ -152,47 +159,43 @@ While the database script is running (it can take 10–30 minutes), use this tim
 
 While or after the script finishes, confirm that your local environment has the required directories for the upcoming exercises.
 
-1. Verify the VS Code extensions installed successfully:
+1. Verify the required VS Code extensions are pre-installed:
+    1. Open the **Extensions** view (`Ctrl+Shift+X`).
+    1. Search for `ms-mssql` and confirm **SQL Server (mssql)** shows as installed.
+    1. Search for `azure resource groups` and confirm **Azure Resource Groups** shows as installed.
+    1. Search for `GitHub Copilot` and confirm both **GitHub Copilot** and **GitHub Copilot Chat** show as installed.
 
-    ```powershell
-    code --list-extensions | Select-String -Pattern 'ms-mssql.mssql|ms-azuretools.vscode-azureresourcegroups'
-    ```
-2. Confirm that the local MCP sample folder and the empty working folder for Exercise 6 exist. Run the following commands in PowerShell; each returns `True` if the path exists.
+> [!Note]
+> All required extensions are pre-installed on the lab VM. If any extension is missing, contact the workshop organizer.
+2. Confirm that the local MCP sample folder and the working folder for Exercise 6 exist:
+    1. Select **File** > **Open Folder** and navigate to `C:\LabFiles`.
+    1. Select **Select Folder** to open it in VS Code Explorer.
+    1. In the **Explorer** view, confirm the following items are present:
+        - `sql_mcp_server/` folder
+        - `sql_mcp_server/requirements.txt`
+        - `sql_mcp_server/server.py`
+        - `sql-mcp-lab/` folder
+    1. After confirming, select **File** > **Open Recent** and reopen `C:\build26-lab513` to return to the lab repository.
 
-    ```powershell
-    $items = @(
-      'C:\LabFiles\sql_mcp_server',
-      'C:\LabFiles\sql_mcp_server\requirements.txt',
-      'C:\LabFiles\sql_mcp_server\server.py',
-      'C:\LabFiles\sql-mcp-lab'
-    )
-    $items | ForEach-Object { Write-Output "$_ : $(Test-Path $_)" }
-    ```
     *(If you are using a self-managed environment, create `C:\LabFiles\sql-mcp-lab` and place the required MCP server files in `C:\LabFiles\sql_mcp_server` before continuing).*
 
 ## Task 5: Verify Azure SQL and Cloud Services
 
-1. **Identify your `{LAB_INSTANCE_ID}`:** Once `sqlhyperscale.ps1` completes, import the generated PowerShell env file and extract your unique instance identifier. It is the auto-generated suffix at the end of your SQL server name.
+1. **Identify your `{LAB_INSTANCE_ID}`:** Once `sqlhyperscale.ps1` completes, read `C:\creds.txt` to find your unique instance identifier.
 
     ```powershell
-    # dot-source the PowerShell env file to load variables into the session
-    . .\sqldbhyperscale.env.ps1
-
-    $LAB_INSTANCE_ID = ($env:SQL_SERVER -split '-')[-1]
-    Write-Output "Your LAB_INSTANCE_ID: $LAB_INSTANCE_ID"
+    Get-Content C:\creds.txt
     ```
 
 > [!Important]
-> **Write down this value.** You will substitute `{LAB_INSTANCE_ID}` with it throughout the remaining exercises when entering connection strings, naming dev tunnel resources, Fabric workspaces, and Foundry tools.
->
-> For example, if the script generated `SQL_SERVER=faq-ai-server-a3f2b1`, your `{LAB_INSTANCE_ID}` is `a3f2b1`.
+> **Write down the `LAB_INSTANCE_ID` value.** You will substitute `{LAB_INSTANCE_ID}` with it throughout the remaining exercises when entering connection strings, naming dev tunnel resources, Fabric workspaces, and Foundry tools.
 
 1. **Verify Azure SQL:** Confirm the seeded data by connecting via `sqlcmd` (PowerShell example uses environment variables loaded from the `.ps1` file):
 
     ```powershell
     sqlcmd -S "tcp:$env:SQL_SERVER.database.windows.net,1433" -d "$env:SQL_DB" -U "$env:SQL_ADMIN" -P "$env:SQL_PASSWORD" -C -Q "SET NOCOUNT ON; SELECT (SELECT COUNT(*) FROM dbo.FAQ_Content) AS faq_count, (SELECT COUNT(*) FROM dbo.FAQ_Embeddings) AS embedding_count;"
     ```
-    *(The PowerShell env file you dot-sourced above loaded the correct server name, database name, admin username, and password into `$env:` variables.)*
+    *(The `C:\creds.txt` file you loaded above contains the server name, database name, admin username, and password which were set into `$env:` variables.)*
 
 2. **Verify Microsoft Foundry:** Go back to `https://ai.azure.com/` and confirm you can access the `FAQ-Assistant-project`.
 3. **Verify Microsoft Fabric:** Go to `https://app.fabric.microsoft.com` and confirm you can create a new workspace. You will use a workspace named `FAQ-Workspace-{LAB_INSTANCE_ID}` in Exercise 5.
@@ -205,7 +208,7 @@ Before moving on, verify that all of the following are true:
 - You can sign in to Azure with `az login` (for Azure CLI operations)
 - Visual Studio Code opens and the SQL Server, GitHub Copilot, and Copilot Chat extensions are available
 - `python`, `pip`, `dotnet`, and `devtunnel` run successfully in the terminal
-- The installation scripts ran successfully; `sqldbhyperscale.env` exists and Azure SQL Hyperscale is reachable with the FAQ tables
+ - The installation scripts ran successfully; `C:\creds.txt` exists and Azure SQL Hyperscale is reachable with the FAQ tables
 - The lab repository is cloned, and `C:\LabFiles\sql-mcp-lab` and `C:\LabFiles\sql_mcp_server` exist
 - Microsoft Foundry opens the `FAQ-Assistant-project`
 - Microsoft Fabric is available for workspace creation and mirroring

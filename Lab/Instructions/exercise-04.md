@@ -67,23 +67,22 @@ Running locally means you can inspect the server logs and see every tool call in
     ```
 
 1. Configure the MCP server by creating a `.env` file from the provided example template.
+    1. In the **Explorer** view (`Ctrl+Shift+E`), right-click `.env.example` and select **Copy**.
+    1. Right-click an empty area in the Explorer pane and select **Paste**.
+    1. Right-click the pasted file and select **Rename**, then type `.env` and press **Enter**.
+    1. Select `.env` to open it in the editor.
 
-    ```powershell
-    Copy-Item .env.example .env
-    code .env
-    ```
+    Fill in the four variables. All values except `OPENAI_MODEL` come from `C:\creds.txt` (run `Get-Content C:\creds.txt` in a terminal to retrieve them):
 
-    Fill in the four variables using values from `sqldbhyperscale.env` and your credential sheet:
+    | Variable | Value | Source |
+    | --- | --- | --- |
+    | `DATABASE_URL` | `mssql+pymssql://adminuser:<SQL_PASSWORD>@faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net/faq-ai-assistant-db-{LAB_INSTANCE_ID}` | `C:\creds.txt` (`SQL_PASSWORD`, `LAB_INSTANCE_ID`) |
+    | `OPENAI_URL` | `https://<FOUNDRY_ENDPOINT>/openai/v1/chat/completions` | `C:\creds.txt` (`FOUNDRY_ENDPOINT`) |
+    | `OPENAI_API_KEY` | Your Microsoft Foundry API key | `C:\creds.txt` (`FOUNDRY_API_KEY`) |
+    | `OPENAI_MODEL` | `gpt-5-mini` | Fixed value |
 
-    | Variable | Value |
-    | --- | --- |
-    | `DATABASE_URL` | `mssql+pymssql://adminuser:<SQL_PASSWORD>@faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net/faq-ai-assistant-db-{LAB_INSTANCE_ID}` |
-    | `OPENAI_URL` | `https://<YOUR_FOUNDRY_ENDPOINT>/openai/v1/chat/completions` |
-    | `OPENAI_API_KEY` | Your Microsoft Foundry API key |
-    | `OPENAI_MODEL` | `gpt-5-mini` |
-
-    > [!Note]
-    > Replace `<SQL_PASSWORD>` and `{LAB_INSTANCE_ID}` with the values from `sqldbhyperscale.env`, and `<YOUR_FOUNDRY_ENDPOINT>` with the Microsoft Foundry endpoint from your credential sheet (the hostname only, e.g. `your-resource.openai.azure.com`).
+    > [!Tip]
+    > Run `Get-Content C:\creds.txt` in a terminal to retrieve `SQL_PASSWORD`, `LAB_INSTANCE_ID`, `FOUNDRY_ENDPOINT`, and `FOUNDRY_API_KEY`.
 
     Save the file and return to the terminal.
 
@@ -121,7 +120,7 @@ Running locally means you can inspect the server logs and see every tool call in
 
     Your browser opens to the Microsoft sign-in page. Sign in with your Entra ID credentials, then return to the terminal.
 
-1. Run the tunnel setup commands. Replace `{LAB_INSTANCE_ID}` with your value from Exercise 0.
+1. Run the tunnel setup commands. Replace `{LAB_INSTANCE_ID}` with the `LAB_INSTANCE_ID` value from `C:\creds.txt`.
 
     ```bash
     devtunnel create my-faq-tunnel-{LAB_INSTANCE_ID} --allow-anonymous

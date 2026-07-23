@@ -1,141 +1,124 @@
-<p align="center">
-<img src="img/banner-build-26.png" alt="Microsoft Build 2026" width="1200"/>
-</p>
+# Build an AI App with Azure SQL Hyperscale, Microsoft Fabric, and Microsoft Foundry
 
-# [Microsoft Build 2026](https://build.microsoft.com)
+> **About this fork**
+> This repository is forked and adapted from the official [Microsoft Build 2026 LAB513](https://github.com/microsoft/Build26-LAB513-build-an-ai-app-with-azure-sql-hyperscale-microsoft-fabric-foundry) session lab, originally authored by [Someleze Diko](https://github.com/dikodev) and [Matthew Calder](https://github.com/MatthewCalder-msft).
+> Adjustments have been made to the lab content, instructions, and supporting files to suit a self-paced or customized delivery context.
 
-## 🔥 LAB513: Build an AI app with Azure SQL Hyperscale, Microsoft Fabric, and Microsoft Foundry
+## What This Lab Is About
 
-### Session Description
+This lab guides you through building a complete, end-to-end AI-powered FAQ assistant — from an empty database to a fully orchestrated agent. The data backbone is Azure SQL Hyperscale. The intelligence is provided by Azure OpenAI Service. GitHub Copilot accelerates development, Microsoft Foundry Agents orchestrate the workflow, and Microsoft Fabric mirrors the data for analytics.
 
-Build an AI-powered FAQ assistant using Azure SQL Database vector search and Retrieval-Augmented Generation (RAG) with Azure OpenAI Service. Use GitHub Copilot to speed T-SQL, mirror data into Microsoft Fabric (OneLake) for analytics, apply governance with Microsoft Purview, and orchestrate the workflow with Microsoft Foundry Agents.
+Each exercise introduces a new layer of the system. By the end, you will have a working system and a clear mental model of how modern AI applications connect data, retrieval, grounding, and generation.
 
-### 🏫 Getting started in a guided session
+## The Core Problem: Hallucination and Grounding
 
-The lab environment for this lab is a Windows VM with GitHub Copilot CLI, Windows Terminal, Visual Studio Code and an Azure SQL Hyperscale instance pre-provisioned. If you're attending the live session, follow along with the instructor as they guide you through the steps to build an AI app with Azure SQL Hyperscale, Microsoft Fabric, and Microsoft Foundry.
+A major challenge with AI language models is **hallucination** — the model confidently produces incorrect answers when it does not have the right information in context. The solution used throughout this lab is **grounding**: you retrieve real, verified facts from your database and supply them to the model as context *before* it generates an answer.
 
-### 🏠 Getting started in your own environment
+This pattern is called **Retrieval-Augmented Generation (RAG)**:
 
-If you're following these steps at your own pace:
+```text
+User question
+     │
+     ▼
+Convert question to vector embedding (Azure OpenAI)
+     │
+     ▼
+Search dbo.FAQ_Embeddings for nearest vectors (VECTOR_DISTANCE)
+     │
+     ▼
+Return matching FAQ content as grounding context
+     │
+     ▼
+Pass context + question to GPT → grounded, accurate answer
+```
 
-- Create an Azure SQL Database instance with Hyperscale tier.
-- Create a project with Microsoft Foundry
-- Set up a workspace in Microsoft Fabric tied to a Fabric Capacity.
-- Install GitHub Copilot CLI and Visual Studio Code.
+Because the model only answers from verified database content, hallucinations are dramatically reduced. Every exercise in this lab is built around this principle.
 
-Once these prerequisites are in place, you can follow the step-by-step instructions in the [lab overview](docs/Lab/README.md) to build your AI app.
+## Why Azure SQL Hyperscale?
 
-### 🧠 Learning Outcomes
+Traditional databases are built for transactions and reporting. Modern AI workloads need more: they need to find *semantically similar* content (not just exact matches), handle large data volumes without rearchitecting, and serve as the grounding layer that keeps AI answers accurate.
+
+Azure SQL Hyperscale addresses all of these by separating compute and storage:
+
+| Capability | What it enables |
+|---|---|
+| **Independent scaling** | Scale compute or storage separately — no rearchitecting |
+| **Up to 100 TB storage** | Grow the FAQ corpus without hitting database limits |
+| **Native vector columns** | Store embeddings alongside structured content in the same table |
+| **`VECTOR_DISTANCE`** | Semantic similarity search runs natively inside SQL |
+| **`sp_invoke_external_rest_endpoint`** | SQL can call Azure OpenAI directly — RAG closes inside the database |
+| **High-throughput retrieval** | Serves both transactional and AI workloads from the same database |
+| **Snapshot-based backups** | Near-instant backup and restore even at large scale |
+
+## Architecture
+
+This is the end-to-end data flow you will build across all exercises:
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│              Azure SQL Hyperscale                        │
+│  dbo.FAQ_Content    +    dbo.FAQ_Embeddings (VECTOR)     │
+│       │                        │                        │
+│       └──── SearchFAQ SP ──────┘                        │
+│              (semantic retrieval)                        │
+└───────────────────────┬─────────────────────────────────┘
+                        │
+          ┌─────────────┼──────────────┐
+          ▼             ▼              ▼
+    Exercise 3       Exercise 4    Exercise 5
+    RAG in SQL    Foundry Agents   Fabric Mirror
+    (GPT answer)  (MCP + Agents)  (Analytics)
+                        │
+                   Exercise 6
+                 DAB / SQL MCP
+               (Standardized API)
+```
+
+## Key Technologies
+
+| Technology | Role in this lab |
+|---|---|
+| **Azure SQL Hyperscale** | Stores FAQ content and vector embeddings; executes semantic search |
+| **Azure OpenAI Service** | Generates embeddings and produces grounded AI answers |
+| **GitHub Copilot** | Accelerates SQL development; explains and improves T-SQL |
+| **Microsoft Foundry Agents** | Orchestrates the FAQ workflow using autonomous tool calls |
+| **Model Context Protocol (MCP)** | Standard interface for AI agents to call tools and data services |
+| **Microsoft Fabric Mirroring** | Replicates operational data into OneLake for analytics — no ETL |
+| **Data API Builder (DAB)** | Exposes Azure SQL as a standards-based MCP server with zero custom code |
+
+## Exercise Progression
+
+The exercises are sequential — each one builds directly on the previous. Start from Exercise 00 and work forward.
+
+| Exercise | What you do | What you learn |
+|---|---|---|
+| [00 – Prerequisites](Lab/Instructions/exercise-00.md) | Set up tools, clone the repo, provision Azure SQL | A consistent environment so you can focus on AI concepts, not troubleshooting |
+| [01 – Semantic Search](Lab/Instructions/exercise-01.md) | Connect to SQL, explore FAQ data, run vector search | Why semantic search finds relevant results that keyword search misses |
+| [02 – GitHub Copilot for SQL](Lab/Instructions/exercise-02.md) | Use Copilot to generate, explain, and improve T-SQL | How AI accelerates SQL authoring while you stay in control as the expert |
+| [03 – RAG Workflow](Lab/Instructions/exercise-03.md) | Retrieve FAQ context, build a grounded prompt, call GPT | How grounding prevents hallucinations — the model only answers from your data |
+| [04 – Foundry Agents + MCP](Lab/Instructions/exercise-04.md) | Expose retrieval as an MCP tool, wire it to a Foundry Agent | How the agent decides autonomously when to call the retrieval tool |
+| [05 – Fabric Mirroring](Lab/Instructions/exercise-05.md) | Mirror FAQ data into OneLake, build a Power BI report | How analytics workloads can be separated from AI workloads without ETL |
+| [06 – SQL MCP via DAB](Lab/Instructions/exercise-06.md) | Expose Azure SQL through Data API Builder as an MCP server | How any AI agent or Copilot can query your database through a standardized, secure interface |
+
+## Learning Outcomes
 
 By the end of this lab, you will be able to:
 
-- Build a Retrieval-Augmented Generation workflow over enterprise data using Azure SQL Database vector search and Azure OpenAI Service
-- Mirror operational data into Microsoft Fabric OneLake for analytics and downstream AI workflows
-- Apply governance with Microsoft Purview and orchestrate the end-to-end experience with Microsoft Foundry Agents
+- Explain the RAG pattern and why grounding prevents AI hallucinations
+- Build semantic search over structured enterprise data using Azure SQL native vector support
+- Write and improve T-SQL with GitHub Copilot as an AI pair programmer
+- Implement a full RAG workflow — from embedding generation to grounded GPT responses — entirely within Azure SQL
+- Expose a retrieval tool via MCP and wire it to a Microsoft Foundry Agent for autonomous orchestration
+- Mirror operational data into Microsoft Fabric OneLake for analytics without building ETL pipelines
+- Publish Azure SQL data as a standards-based MCP server using Data API Builder
 
-### 💬 Keep Learning with Copilot
+## Getting Started
 
-Try these prompts with GitHub Copilot to explore the topics from this lab. Open Copilot Chat in Visual Studio Code (`Ctrl+Alt+I` on Windows/Linux, `Cmd+Shift+I` on Mac), paste a prompt, and see what you learn. Try connecting the [Microsoft Learn MCP Server](#-microsoft-learn-mcp-server) for the latest official documentation.
+Prerequisites:
 
-Use these as a starting point — or write your own!
+- An Azure SQL Database instance (Hyperscale tier)
+- A Microsoft Foundry project
+- A Microsoft Fabric workspace tied to a Fabric Capacity
+- GitHub Copilot and Visual Studio Code
 
-1. Understand semantic search with Azure SQL Database Hyperscale:
-
-    ```text
-    Explain how Azure SQL Database Hyperscale uses vector embeddings to retrieve the most relevant FAQ answers for a customer question.
-    ```
-
-1. Compare search approaches in T-SQL:
-
-    ```text
-    Draft a T-SQL query for Azure SQL Database that compares keyword search with semantic search against dbo.FAQ_Content and dbo.FAQ_Embeddings.
-    ```
-
-1. Break down the RAG workflow:
-
-    ```text
-    Summarize how Retrieval-Augmented Generation in this lab uses grounded FAQ context to reduce hallucinations.
-    ```
-
-1. Go deeper on agent orchestration:
-
-    ```text
-    Describe how Microsoft Foundry Agents and MCP work together in this lab to orchestrate FAQ retrieval and grounded responses.
-    ```
-
-1. Explore analytics in Microsoft Fabric:
-
-    ```text
-    Suggest a Microsoft Fabric report that uses mirrored FAQ_Content data to analyze support trends by category.
-    ```
-
-1. Learn when to expose data through MCP:
-
-    ```text
-    Explain when you would expose Azure SQL Database through Data API Builder and MCP instead of querying it directly from an application.
-    ```
-
-### 💻 Technologies Used
-
-1. [Azure SQL Database Hyperscale](https://learn.microsoft.com/azure/azure-sql/database/service-tier-hyperscale?view=azuresql)
-1. [Azure OpenAI Service](https://learn.microsoft.com/azure/ai-foundry/openai/overview)
-1. [Microsoft Fabric](https://learn.microsoft.com/fabric/fundamentals/microsoft-fabric-overview)
-1. [Microsoft Purview](https://learn.microsoft.com/purview/purview)
-1. [Microsoft Foundry](https://learn.microsoft.com/azure/foundry/what-is-foundry)
-1. [GitHub Copilot](https://learn.microsoft.com/training/modules/introduction-to-github-copilot/)
-
-### 📚 Resources and Next Steps
-
-| Resource | Description |
-|:---------|:------------|
-| [https://aka.ms/build26-next-steps](https://aka.ms/build26-next-steps) | Take the next step in your learning journey after Build 2026 |
-
-
-### 🌟 Microsoft Learn MCP Server
-
-[![Install in Visual Studio Code](https://img.shields.io/badge/Visual_Studio_Code-Install_Microsoft_Docs_MCP-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=microsoft.docs.mcp&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Flearn.microsoft.com%2Fapi%2Fmcp%22%7D)
-
-The Microsoft Learn MCP Server is a remote MCP Server that enables clients like GitHub Copilot and other AI agents to bring trusted and up-to-date information directly from Microsoft's official documentation. Get started by using the one-click button above for Visual Studio Code or access the [mcp.json](.vscode/mcp.json) file included in this repo.
-
-For more information, setup instructions for other dev clients, and to post comments and questions, visit our Learn MCP Server GitHub repo at [https://github.com/MicrosoftDocs/MCP](https://github.com/MicrosoftDocs/MCP). Find other MCP Servers to connect your agent to at [https://mcp.azure.com](https://mcp.azure.com).
-
-*Note: When you use the Learn MCP Server, you agree with [Microsoft Learn](https://learn.microsoft.com/en-us/legal/termsofuse) and [Microsoft API Terms](https://learn.microsoft.com/en-us/legal/microsoft-apis/terms-of-use) of Use.*
-
-## Content Owners
-
-<table>
-<tr>
-    <td align="center"><a href="https://github.com/dikodev">
-        <img src="https://github.com/dikodev.png" width="100px;" alt="Someleze Diko"/><br />
-        <sub><b>Someleze Diko</b></sub></a><br />
-            <a href="https://github.com/dikodev" title="talk">📢</a>
-    </td>
-  <td align="center"><a href="https://github.com/MatthewCalder-msft">
-        <img src="https://github.com/MatthewCalder-msft.png" width="100px;" alt="Matthew Calder"/><br />
-        <sub><b>Matthew Calder</b></sub></a><br />
-            <a href="https://github.com/MatthewCalder-msft" title="talk">📢</a>
-    </td>
-</tr>
-</table>
-
-## Contributing
-
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit [Contributor License Agreements](https://cla.opensource.microsoft.com).
-
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
-
-## Trademarks
-
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
-trademarks or logos is subject to and must follow
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/legal/intellectualproperty/trademarks/usage/general).
-Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
-Any use of third-party trademarks or logos are subject to those third-party's policies.
+Start with [Exercise 00 – Prerequisites](Lab/Instructions/exercise-00.md) to set up your environment and provision the necessary Azure resources.

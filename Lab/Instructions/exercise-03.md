@@ -123,9 +123,9 @@ The script in this task does three things that are worth understanding separatel
 1. Append a chat-completions call pattern to the same query window so Azure SQL Hyperscale can call the model with the grounded prompt.
 
     > [!Important]
-    > Before running the script below, replace the two placeholder values with the credentials from your credential sheet:
-    > - `<YOUR_FOUNDRY_API_KEY>` → your **Microsoft Foundry API key**
-    > - `<YOUR_FOUNDRY_ENDPOINT>` → your **Microsoft Foundry endpoint** (the hostname only, e.g. `your-resource.openai.azure.com`)
+    > Before running the script below, replace the two placeholder values with the values from `C:\creds.txt` (run `Get-Content C:\creds.txt` in a terminal to retrieve them):
+    > - `<YOUR_FOUNDRY_API_KEY>` → the `FOUNDRY_API_KEY` value
+    > - `<YOUR_FOUNDRY_ENDPOINT>` → the `FOUNDRY_ENDPOINT` value (the hostname only, e.g. `your-resource.openai.azure.com`)
 
     ```sql
     DECLARE @payload NVARCHAR(MAX);

@@ -75,6 +75,10 @@ The connection uses **Basic (SQL) authentication** because the Fabric Mirroring 
 1. Select `My workspace` and create a new workspace.
 1. Select `+ New workspace`.
 1. Name the workspace `FAQ-Workspace-{LAB_INSTANCE_ID}`.
+
+    > [!Tip]
+    > Run `Get-Content C:\creds.txt` in a terminal to retrieve your `LAB_INSTANCE_ID`, `SQL_PASSWORD`, and other values needed in this exercise.
+
 1. Select `Apply`.
 1. From the workspace, select `+ New Item`.
 1. Search for and select `Mirrored Azure SQL Database`.
@@ -93,7 +97,7 @@ The connection uses **Basic (SQL) authentication** because the Fabric Mirroring 
     | Database | `faq-ai-assistant-db-{LAB_INSTANCE_ID}` |
     | Authentication kind | `Basic` |
     | Username | `adminuser` |
-    | Password | `{SQL_PASSWORD}` (from `sqldbhyperscale.env`) |
+    | Password | `{SQL_PASSWORD}` (from `C:\creds.txt`) |
     | Privacy level | `None` |
     | Use encrypted connection | `Enabled` |
 
