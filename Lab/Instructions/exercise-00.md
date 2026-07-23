@@ -186,7 +186,7 @@ While or after the script finishes, confirm that your local environment has the 
     Get-Content C:\creds.txt
     ```
 
-2. **Verify Microsoft Foundry:** Go back to `https://ai.azure.com/` and confirm you can access the `FAQ-Assistant-project`.
+2. **Verify Microsoft Foundry:** Go back to `https://ai.azure.com/` and confirm you can access the `workshop-ai-foundry-project`.
 3. **Verify Microsoft Fabric:** Go to `https://app.fabric.microsoft.com` and confirm you can create a new workspace. You will use a workspace named `FAQ-Workspace-{LAB_INSTANCE_ID}` in Exercise 5.
 
 ## Task 6: Final Readiness Check
@@ -195,12 +195,12 @@ Before moving on, verify that all of the following are true:
 
 - You have accepted the GitHub organization invitation in your email
 - You can sign in to Azure with `az login` (for Azure CLI operations)
-- Visual Studio Code opens and the SQL Server, GitHub Copilot, and Copilot Chat extensions are available
+- Visual Studio Code opens and the SQL Server and GitHub Copilot extensions are available
 - `python`, `pip`, `dotnet`, and `devtunnel` run successfully in the terminal
- - The installation scripts ran successfully; `C:\creds.txt` exists and Azure SQL Hyperscale is reachable with the FAQ tables
+- The installation scripts ran successfully; `C:\creds.txt` exists and Azure SQL Hyperscale is reachable with the FAQ tables
 - The lab repository is cloned, and `C:\LabFiles\sql-mcp-lab` and `C:\LabFiles\sql_mcp_server` exist
-- Microsoft Foundry opens the `FAQ-Assistant-project`
-- Microsoft Fabric is available for workspace creation and mirroring
+- Microsoft Foundry opens the `workshop-ai-foundry-project`
+- Microsoft Fabric is available for workspace creation
 
 If every item is ready, continue to the first hands-on exercise.
 
