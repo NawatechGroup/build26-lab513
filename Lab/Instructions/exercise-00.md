@@ -162,8 +162,7 @@ While or after the script finishes, confirm that your local environment has the 
 1. Verify the required VS Code extensions are pre-installed:
     1. Open the **Extensions** view (`Ctrl+Shift+X`).
     1. Search for `ms-mssql` and confirm **SQL Server (mssql)** shows as installed.
-    1. Search for `azure resource groups` and confirm **Azure Resource Groups** shows as installed.
-    1. Search for `GitHub Copilot` and confirm both **GitHub Copilot** and **GitHub Copilot Chat** show as installed.
+    1. Search for `GitHub Copilot` and confirm **GitHub Copilot Chat** shows as installed.
 
 > [!Note]
 > All required extensions are pre-installed on the lab VM. If any extension is missing, contact the workshop organizer.
@@ -181,21 +180,11 @@ While or after the script finishes, confirm that your local environment has the 
 
 ## Task 5: Verify Azure SQL and Cloud Services
 
-1. **Identify your `{LAB_INSTANCE_ID}`:** Once `sqlhyperscale.ps1` completes, read `C:\creds.txt` to find your unique instance identifier.
+1. **Identify your `{LAB_INSTANCE_ID}`:** Once `sqlhyperscale.ps1` completes, read the text file in `C:\creds.txt` to find your unique instance identifier or run this command in the terminal:
 
     ```powershell
     Get-Content C:\creds.txt
     ```
-
-> [!Important]
-> **Write down the `LAB_INSTANCE_ID` value.** You will substitute `{LAB_INSTANCE_ID}` with it throughout the remaining exercises when entering connection strings, naming dev tunnel resources, Fabric workspaces, and Foundry tools.
-
-1. **Verify Azure SQL:** Confirm the seeded data by connecting via `sqlcmd` (PowerShell example uses environment variables loaded from the `.ps1` file):
-
-    ```powershell
-    sqlcmd -S "tcp:$env:SQL_SERVER.database.windows.net,1433" -d "$env:SQL_DB" -U "$env:SQL_ADMIN" -P "$env:SQL_PASSWORD" -C -Q "SET NOCOUNT ON; SELECT (SELECT COUNT(*) FROM dbo.FAQ_Content) AS faq_count, (SELECT COUNT(*) FROM dbo.FAQ_Embeddings) AS embedding_count;"
-    ```
-    *(The `C:\creds.txt` file you loaded above contains the server name, database name, admin username, and password which were set into `$env:` variables.)*
 
 2. **Verify Microsoft Foundry:** Go back to `https://ai.azure.com/` and confirm you can access the `FAQ-Assistant-project`.
 3. **Verify Microsoft Fabric:** Go to `https://app.fabric.microsoft.com` and confirm you can create a new workspace. You will use a workspace named `FAQ-Workspace-{LAB_INSTANCE_ID}` in Exercise 5.
