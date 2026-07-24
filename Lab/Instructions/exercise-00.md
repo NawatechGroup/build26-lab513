@@ -11,7 +11,7 @@ Think of this exercise as a **preflight checklist**: pilots run one not because 
 - Connect to your lab VM via RDP
 - Confirm your lab credentials and accounts
 - Clone the lab repository and verify local tools
-- Run the provisioning script to create Azure SQL Hyperscale and seed it with FAQ data
+- Confirm pre-provisioned Azure SQL Hyperscale access and capture your connection details
 - Verify access to Azure SQL Hyperscale, Microsoft Foundry, and Microsoft Fabric
 
 ## What Will Be Ready When You Finish
@@ -30,35 +30,38 @@ By the end of this exercise you will have:
 | **`C:\LabFiles\sql-mcp-lab`** | The working folder where you configure and run DAB in Exercise 6 |
 
 > [!Note]
-> In the guided lab environment, many of these prerequisites (like the VM, Resource Group, and Microsoft Foundry) are pre-provisioned for you. If you are running the lab in your own self-managed environment, ensure you complete every item in this checklist before continuing.
+> In the guided lab environment, many of these prerequisites (like the VM and Microsoft Foundry) are pre-provisioned for you. If you are running the lab in your own self-managed environment, ensure you complete every item in this checklist before continuing.
 
 ## Task 1: Connect to the VM and Confirm Credentials
 
-Your workshop organizer provides a **credential sheet** at the start of the session. Some credentials are on the sheet; others are written to `C:\creds.txt` automatically after the provisioning script runs in Task 3.
+Your workshop organizer provides a **credential sheet** at the start of the session. Additional shared service credentials are already available in `C:\creds.txt`.
 
 1. Locate your credential sheet and confirm it contains the following:
 
     | Credential | Where it is used in this lab |
     | --- | --- |
     | **VM username and password** | Log into the Windows lab VM via RDP |
-    | **Microsoft Entra ID account** | `az login` (Azure CLI to provision Azure SQL), Microsoft Foundry (`https://ai.azure.com/`), Microsoft Fabric (`https://app.fabric.microsoft.com`), and dev tunnel sign-in in Exercise 4 |
-    | **Resource group name** | `--RG` parameter in the provisioning script |
+    | **Microsoft Entra ID account** | Azure Portal access, `az login` (Azure CLI), Microsoft Foundry (`https://ai.azure.com/`), Microsoft Fabric (`https://app.fabric.microsoft.com`), and dev tunnel sign-in in Exercise 4 |
     | **Your personal GitHub account** | GitHub Copilot sign-in in VS Code — used in Exercise 2 |
 
 > [!Note]
-> The following values are **automatically generated** by the provisioning script and written to `C:\creds.txt`. You do not pre-configure these — they are ready after the script completes in Task 3.
+> The following values are prepared for the lab and available in `C:\creds.txt`.
 >
 > | Variable | Description |
 > | --- | --- |
-> | `SQL_SERVER` | Azure SQL logical server hostname |
-> | `SQL_DB` | Database name |
-> | `SQL_ADMIN` | SQL admin username |
-> | `SQL_PASSWORD` | SQL admin password |
-> | `LAB_INSTANCE_ID` | Unique suffix used in all resource names and tunnel IDs |
-> | `FOUNDRY_ENDPOINT` | Microsoft Foundry (Azure OpenAI) endpoint hostname |
+> | `SQL_ADMIN` | SQL admin username (same for all participants) |
+> | `SQL_PASSWORD` | SQL admin password (same for all participants) |
+> | `LAB_INSTANCE_ID` | Unique 2-digit suffix used in all resource names and tunnel IDs |
+> | `FOUNDRY_ENDPOINT` | Microsoft Foundry base endpoint |
 > | `FOUNDRY_API_KEY` | Microsoft Foundry API key |
 >
-> Run `Get-Content C:\creds.txt` in any terminal to display all values.
+> `SQL_SERVER` (hostname) and `SQL_DB` (database name) are participant-specific. In Task 3 you will get them from Azure Portal by copying your database connection string and then paste them into `C:\creds.txt` for easier reuse.
+>
+> You can derive `LAB_INSTANCE_ID` from your participant email name:
+> - `Nawa_MSPowerBI_1@nawadarsana.onmicrosoft.com` -> `LAB_INSTANCE_ID=01`
+> - `Nawa_MSPowerBI_49@nawadarsana.onmicrosoft.com` -> `LAB_INSTANCE_ID=49`
+
+Run `Get-Content C:\creds.txt` in any terminal to display all values.
 
 2. Connect to the VM using your local Remote Desktop Protocol (RDP) client with the VM username and password from your credential sheet.
 3. Confirm that you can open the following in the VM's browser:
@@ -123,9 +126,9 @@ code C:\build26-lab513
 > - **dotnet** — Data API Builder (DAB) in Exercise 6 is a .NET global tool. You install and run it with the `dotnet` CLI.
 > - **devtunnel** — When the MCP server runs on your local machine, Microsoft Foundry (a cloud service) cannot reach `localhost`. Dev Tunnel creates a secure HTTPS forwarding URL that bridges your local process to the public internet.
 
-## Task 3: Provision Azure SQL Hyperscale
+## Task 3: Collect Azure SQL Hyperscale Connection Details (Pre-Provisioned)
 
-**`sqlhyperscale.ps1`** creates your dedicated Azure SQL logical server and Hyperscale database, then runs three SQL scripts that: (1) create the `FAQ_Content` and `FAQ_Embeddings` tables, (2) seed FAQ question-and-answer pairs, and (3) generate 1,536-dimension vector embeddings via Azure Foundry and store them. This is the data foundation that all subsequent exercises depend on.
+Azure SQL Hyperscale and seed data are pre-provisioned by the workshop organizer. In this task, you will collect your participant-specific SQL hostname/database info and configure networking access from the lab VM.
 
 1. Sign in to Azure from the terminal using device-code authentication (recommended for lab VMs without a browser session):
 
@@ -135,29 +138,33 @@ code C:\build26-lab513
 
     Confirm your subscription appears in `az account list` or in the Azure extension.
 
-2. Navigate to the installation scripts folder:
+2. Open Azure Portal (`https://portal.azure.com`) and locate the Azure SQL logical server assigned to your participant account.
+3. On the SQL server resource, go to **Networking**:
+    - Add a firewall rule for your lab VM client IP.
+    - Enable **Allow Azure services and resources to access this server**.
 
-    ```powershell
-    cd C:\installation-script
+4. From that SQL server, open the associated Azure SQL database (Hyperscale), then open **Connection strings**.
+5. Copy a connection string, for example:
+
+    ```text
+    Server=tcp:<server-name>.database.windows.net,1433;Initial Catalog=<db-name>;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication="Active Directory Default";
     ```
 
-3. Provision the dedicated Azure SQL logical server and Hyperscale database. When running the script on the lab VM you only need to pass your resource group (`--RG`):
+6. Map the connection string to lab variables and save them in `C:\creds.txt`:
+    - `SQL_SERVER=<server-name>.database.windows.net` (from the `Server=tcp:...` value, without `tcp:` and without `,1433`)
+    - `SQL_DB=<db-name>` (from `Initial Catalog=...`)
+    - Optional: keep the full value as `SQL_CONNECTION_STRING=...`
 
-    ```powershell
-    .\sqlhyperscale.ps1 --RG <YOUR_RESOURCE_GROUP> --yes
-    ```
-
-> [!Note]
-> Replace `<YOUR_RESOURCE_GROUP>` with the value from your credential sheet. The script auto-generates the server name, database name, and admin credentials, then writes the outputs to `C:\creds.txt`. Hyperscale creation can take 10–30 minutes depending on region capacity.
+    `SQL_SERVER` and `SQL_DB` are different for each participant.
 
 ## Task 4: Verify Local Files and Working Paths
 
-While the database script is running (it can take 10–30 minutes), use this time to verify your local environment. The two directories below serve specific purposes in later exercises:
+Use this time to verify your local environment. The two directories below serve specific purposes in later exercises:
 
 - **`C:\LabFiles\sql_mcp_server`** — Contains the pre-written Python MCP server (`server.py`) and its dependency list (`requirements.txt`). You will run this server in Exercise 4 to expose FAQ retrieval as an MCP tool that Foundry Agents can call.
 - **`C:\LabFiles\sql-mcp-lab`** — An initially empty working folder. In Exercise 6 you will initialize Data API Builder here and configure it to expose Azure SQL Hyperscale as a standardized MCP endpoint.
 
-While or after the script finishes, confirm that your local environment has the required directories for the upcoming exercises.
+After collecting your SQL connection details, confirm that your local environment has the required directories for the upcoming exercises.
 
 1. Verify the required VS Code extensions are pre-installed:
     1. Open the **Extensions** view (`Ctrl+Shift+X`).
@@ -180,7 +187,11 @@ While or after the script finishes, confirm that your local environment has the 
 
 ## Task 5: Verify Azure SQL and Cloud Services
 
-1. **Identify your `{LAB_INSTANCE_ID}`:** Once `sqlhyperscale.ps1` completes, read the text file in `C:\creds.txt` to find your unique instance identifier or run this command in the terminal:
+1. **Review your `{LAB_INSTANCE_ID}` and SQL details:** Derive `LAB_INSTANCE_ID` from your participant email name, then open `C:\creds.txt` and confirm `LAB_INSTANCE_ID`, `SQL_ADMIN`, `SQL_PASSWORD`, `SQL_SERVER`, and `SQL_DB` are available. If helpful, also keep `SQL_CONNECTION_STRING` in this file.
+
+    Examples:
+    - `Nawa_MSPowerBI_1@nawadarsana.onmicrosoft.com` -> `LAB_INSTANCE_ID=01`
+    - `Nawa_MSPowerBI_49@nawadarsana.onmicrosoft.com` -> `LAB_INSTANCE_ID=49`
 
     ```powershell
     Get-Content C:\creds.txt
@@ -197,7 +208,8 @@ Before moving on, verify that all of the following are true:
 - You can sign in to Azure with `az login` (for Azure CLI operations)
 - Visual Studio Code opens and the SQL Server and GitHub Copilot extensions are available
 - `python`, `pip`, `dotnet`, and `devtunnel` run successfully in the terminal
-- The installation scripts ran successfully; `C:\creds.txt` exists and Azure SQL Hyperscale is reachable with the FAQ tables
+- `C:\creds.txt` exists and includes SQL username/password, Foundry endpoint/key, and your participant-specific SQL hostname/database (or full connection string)
+- Azure SQL server firewall allows your VM IP, and **Allow Azure services and resources to access this server** is enabled
 - The lab repository is cloned, and `C:\LabFiles\sql-mcp-lab` and `C:\LabFiles\sql_mcp_server` exist
 - Microsoft Foundry opens the `workshop-ai-foundry-project`
 - Microsoft Fabric is available for workspace creation
