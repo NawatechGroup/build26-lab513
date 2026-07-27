@@ -57,7 +57,7 @@ You will use the **MSSQL extension for VS Code** rather than a standalone SQL cl
     | Authentication type | `SQL Login` |
     | User name | `adminuser` |
     | Password | `{SQL_PASSWORD}` (from `C:\creds.txt`) |
-    | Database name | `faq-ai-assistant-db-{LAB_INSTANCE_ID}` |
+    | Database name | `faq-ai-db-{LAB_INSTANCE_ID}` |
     | Encrypt | `Mandatory` |
 
     ![Screenshot of Visual Studio Code Add Connection dialog with the above settings filled in](../media/vscode-connection-details.png)

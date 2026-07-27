@@ -198,7 +198,7 @@ After collecting your SQL connection details, confirm that your local environmen
     ```
 
 2. **Verify Microsoft Foundry:** Go back to `https://ai.azure.com/` and confirm you can access the `workshop-ai-foundry-project`.
-3. **Verify Microsoft Fabric:** Go to `https://app.fabric.microsoft.com` and confirm you can create a new workspace. You will use a workspace named `FAQ-Workspace-{LAB_INSTANCE_ID}` in Exercise 5.
+3. **Verify Microsoft Fabric:** Go to `https://app.fabric.microsoft.com` and confirm you can access the pre-configured workspace `ws-fabric-pbi-{LAB_INSTANCE_ID}`. You will use this workspace in Exercise 5.
 
 ## Task 6: Final Readiness Check
 
@@ -212,7 +212,7 @@ Before moving on, verify that all of the following are true:
 - Azure SQL server firewall allows your VM IP, and **Allow Azure services and resources to access this server** is enabled
 - The lab repository is cloned, and `C:\LabFiles\sql-mcp-lab` and `C:\LabFiles\sql_mcp_server` exist
 - Microsoft Foundry opens the `workshop-ai-foundry-project`
-- Microsoft Fabric is available for workspace creation
+- Microsoft Fabric opens the pre-configured workspace `ws-fabric-pbi-{LAB_INSTANCE_ID}`
 
 If every item is ready, continue to the first hands-on exercise.
 

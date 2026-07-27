@@ -72,14 +72,11 @@ The connection uses **Basic (SQL) authentication** because the Fabric Mirroring 
 
 1. Open Microsoft Fabric in the browser: [https://app.fabric.microsoft.com](https://app.fabric.microsoft.com)
 
-1. Select `My workspace` and create a new workspace.
-1. Select `+ New workspace`.
-1. Name the workspace `FAQ-Workspace-{LAB_INSTANCE_ID}`.
+1. Select the pre-configured workspace `ws-fabric-pbi-{LAB_INSTANCE_ID}`.
 
     > [!Tip]
     > Run `Get-Content C:\creds.txt` in a terminal to retrieve your `LAB_INSTANCE_ID`, `SQL_PASSWORD`, and other values needed in this exercise.
 
-1. Select `Apply`.
 1. From the workspace, select `+ New Item`.
 1. Search for and select `Mirrored Azure SQL Database`.
 
@@ -94,7 +91,7 @@ The connection uses **Basic (SQL) authentication** because the Fabric Mirroring 
     | Setting | Value |
     | --- | --- |
     | Server name | `faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net` |
-    | Database | `faq-ai-assistant-db-{LAB_INSTANCE_ID}` |
+    | Database | `faq-ai-db-{LAB_INSTANCE_ID}` |
     | Authentication kind | `Basic` |
     | Username | `adminuser` |
     | Password | `{SQL_PASSWORD}` (from `C:\creds.txt`) |
@@ -116,7 +113,7 @@ Basic authentication corresponds to SQL authentication.
     ![Screenshot of Microsoft Fabric with the dbo.FAQ_Content table selected for mirroring](../media/fabric-azure-sql-table-selection.png)
 
 1. Select `Connect`.
-1. Confirm the destination name is `faq-ai-assistant-db-{LAB_INSTANCE_ID}`.
+1. Confirm the destination name is `faq-ai-db-{LAB_INSTANCE_ID}`.
 1. Select `Create mirrored database`.
 
 1. The expected result:
@@ -171,14 +168,14 @@ Basic authentication corresponds to SQL authentication.
     | Setting | Value |
     | --- | --- |
     | Semantic model name | `FAQ_Content` |
-    | Workspace | `FAQ-Workspace-{LAB_INSTANCE_ID}` |
+    | Workspace | `ws-fabric-pbi-{LAB_INSTANCE_ID}` |
     | Storage mode | `Direct Lake on SQL` |
     | Tables | `FAQ_Content` |
 
     ![Screenshot of Microsoft Fabric with the semantic model creation settings filled in](../media/fabric-semantic-model-table-select.png)
 
 1. Select `Confirm` and wait for semantic model creation to finish.
-1. Open the `FAQ-Workspace-{LAB_INSTANCE_ID}` workspace.
+1. Open the `ws-fabric-pbi-{LAB_INSTANCE_ID}` workspace.
 1. In the resource list, open the ellipsis next to the `FAQ_Content` semantic model and select `Create report`.
 
     ![Screenshot of Microsoft Fabric with the Create report option highlighted next to the semantic model](../media/fabric-create-report.png)
@@ -203,7 +200,7 @@ Basic authentication corresponds to SQL authentication.
 
 ## Task 4: Explore Lineage
 
-1. Return to `FAQ-Workspace-{LAB_INSTANCE_ID}` and select `Lineage view`.
+1. Return to `ws-fabric-pbi-{LAB_INSTANCE_ID}` and select `Lineage view`.
 
     ![Screenshot of Microsoft Fabric with the Lineage view highlighted](../media/fabric-lineage-view.png)
 

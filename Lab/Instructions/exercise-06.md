@@ -104,7 +104,7 @@ You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-ma
 1. Add a DAB configuration that:
 
 - Uses the latest DAB schema
-- Connects to Azure SQL Hyperscale by using the `faq-ai-server-{LAB_INSTANCE_ID}` server and `faq-ai-assistant-db-{LAB_INSTANCE_ID}` database
+- Connects to Azure SQL Hyperscale by using the `faq-ai-server-{LAB_INSTANCE_ID}` server and `faq-ai-db-{LAB_INSTANCE_ID}` database
 - Enables both `rest` and `mcp`
 - Runs the host in `development` mode
 - Exposes `dbo.FAQ_Content` as a read-only entity for MCP use
@@ -116,7 +116,7 @@ You install it as a **.NET local tool** — a tool manifest (`dotnet new tool-ma
       "$schema": "https://github.com/Azure/data-api-builder/releases/latest/download/dab.draft.schema.json",
       "data-source": {
         "database-type": "mssql",
-        "connection-string": "Server=tcp:faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net,1433;Initial Catalog=faq-ai-assistant-db-{LAB_INSTANCE_ID};User ID=adminuser;Password={SQL_PASSWORD};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        "connection-string": "Server=tcp:faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net,1433;Initial Catalog=faq-ai-db-{LAB_INSTANCE_ID};User ID=adminuser;Password={SQL_PASSWORD};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
       },
       "runtime": {
         "rest": {

@@ -76,7 +76,7 @@ Running locally means you can inspect the server logs and see every tool call in
 
     | Variable | Value | Source |
     | --- | --- | --- |
-    | `DATABASE_URL` | `mssql+pymssql://adminuser:<SQL_PASSWORD>@faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net/faq-ai-assistant-db-{LAB_INSTANCE_ID}` | `C:\creds.txt` (`SQL_PASSWORD`, `LAB_INSTANCE_ID`) |
+    | `DATABASE_URL` | `mssql+pymssql://adminuser:<SQL_PASSWORD>@faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net/faq-ai-db-{LAB_INSTANCE_ID}` | `C:\creds.txt` (`SQL_PASSWORD`, `LAB_INSTANCE_ID`) |
     | `OPENAI_URL` | `https://<FOUNDRY_ENDPOINT>/openai/v1/chat/completions` | `C:\creds.txt` (`FOUNDRY_ENDPOINT`) |
     | `OPENAI_API_KEY` | Your Microsoft Foundry API key | `C:\creds.txt` (`FOUNDRY_API_KEY`) |
     | `OPENAI_MODEL` | `gpt-5-mini` | Fixed value |
@@ -149,7 +149,7 @@ This is called **system-level grounding** — you are setting the rules of the g
 1. Open Microsoft Edge and go to `https://ai.azure.com/`.
 1. Select `Sign In`.
 1. Select the `New Foundry` slider.
-1. Select `FAQ-Assistant-project`, then select `Let's go`.
+1. Select `workshop-ai-foundry-project`, then select `Let's go`.
 1. Select `Build`.
 
     ![Screenshot of Microsoft Foundry with the Build option highlighted](../media/foundry-build.png)
