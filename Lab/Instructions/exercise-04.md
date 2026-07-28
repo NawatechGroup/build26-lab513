@@ -72,17 +72,14 @@ Running locally means you can inspect the server logs and see every tool call in
     1. Right-click the pasted file and select **Rename**, then type `.env` and press **Enter**.
     1. Select `.env` to open it in the editor.
 
-    Fill in the four variables. All values except `OPENAI_MODEL` come from `C:\creds.txt` (run `Get-Content C:\creds.txt` in a terminal to retrieve them):
+    Fill in the `DATABASE_URL` variable. The value comes from `C:\creds.txt` (run `Get-Content C:\creds.txt` in a terminal to retrieve it):
 
     | Variable | Value | Source |
     | --- | --- | --- |
     | `DATABASE_URL` | `mssql+pymssql://adminuser:<SQL_PASSWORD>@faq-ai-server-{LAB_INSTANCE_ID}.database.windows.net/faq-ai-db-{LAB_INSTANCE_ID}` | `C:\creds.txt` (`SQL_PASSWORD`, `LAB_INSTANCE_ID`) |
-    | `OPENAI_URL` | `https://<FOUNDRY_ENDPOINT>/openai/v1/chat/completions` | `C:\creds.txt` (`FOUNDRY_ENDPOINT`) |
-    | `OPENAI_API_KEY` | Your Microsoft Foundry API key | `C:\creds.txt` (`FOUNDRY_API_KEY`) |
-    | `OPENAI_MODEL` | `gpt-5-mini` | Fixed value |
 
     > [!Tip]
-    > Run `Get-Content C:\creds.txt` in a terminal to retrieve `SQL_PASSWORD`, `LAB_INSTANCE_ID`, `FOUNDRY_ENDPOINT`, and `FOUNDRY_API_KEY`.
+    > Run `Get-Content C:\creds.txt` in a terminal to retrieve `SQL_PASSWORD` and `LAB_INSTANCE_ID`.
 
     Save the file and return to the terminal.
 
@@ -172,6 +169,7 @@ This is called **system-level grounding** — you are setting the rules of the g
 1. Select `Use in an agent`.
 1. Enter `faq-orchestrator-agent-{LAB_INSTANCE_ID}` as the agent name.
 1. Select `Create and open playground`.
+1. In the **Tools** card, remove the **Web Search** tool by clicking the vertical ellipsis (⋮) then select **Remove**.
 1. In the Instructions card, add guidance like the following:
 
     ```text

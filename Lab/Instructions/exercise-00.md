@@ -130,27 +130,19 @@ code C:\build26-lab513
 
 Azure SQL Hyperscale and seed data are pre-provisioned by the workshop organizer. In this task, you will collect your participant-specific SQL hostname/database info and configure networking access from the lab VM.
 
-1. Sign in to Azure from the terminal using device-code authentication (recommended for lab VMs without a browser session):
-
-    ```powershell
-    az login --use-device-code
-    ```
-
-    Confirm your subscription appears in `az account list` or in the Azure extension.
-
-2. Open Azure Portal (`https://portal.azure.com`) and locate the Azure SQL logical server assigned to your participant account.
-3. On the SQL server resource, go to **Networking**:
+1. Open Azure Portal (`https://portal.azure.com`) and locate the Azure SQL logical server assigned to your participant account.
+2. On the SQL server resource, go to **Networking**:
     - Add a firewall rule for your lab VM client IP.
     - Enable **Allow Azure services and resources to access this server**.
 
-4. From that SQL server, open the associated Azure SQL database (Hyperscale), then open **Connection strings**.
-5. Copy a connection string, for example:
+3. From that SQL server, open the associated Azure SQL database (Hyperscale), then open **Connection strings**.
+4. Copy a connection string, for example:
 
     ```text
     Server=tcp:<server-name>.database.windows.net,1433;Initial Catalog=<db-name>;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication="Active Directory Default";
     ```
 
-6. Map the connection string to lab variables and save them in `C:\creds.txt`:
+5. Map the connection string to lab variables and save them in `C:\creds.txt`:
     - `SQL_SERVER=<server-name>.database.windows.net` (from the `Server=tcp:...` value, without `tcp:` and without `,1433`)
     - `SQL_DB=<db-name>` (from `Initial Catalog=...`)
     - Optional: keep the full value as `SQL_CONNECTION_STRING=...`
@@ -183,7 +175,11 @@ After collecting your SQL connection details, confirm that your local environmen
         - `sql-mcp-lab/` folder
     1. After confirming, select **File** > **Open Recent** and reopen `C:\build26-lab513` to return to the lab repository.
 
-    *(If you are using a self-managed environment, create `C:\LabFiles\sql-mcp-lab` and place the required MCP server files in `C:\LabFiles\sql_mcp_server` before continuing).*
+    *(If you are using a self-managed environment or the `LabFiles` folder is missing on the VM, clone it using the command below before continuing:)*
+
+    ```powershell
+    git clone https://github.com/NawatechGroup/LabFiles.git C:\
+    ```
 
 ## Task 5: Verify Azure SQL and Cloud Services
 
@@ -205,7 +201,6 @@ After collecting your SQL connection details, confirm that your local environmen
 Before moving on, verify that all of the following are true:
 
 - You have accepted the GitHub organization invitation in your email
-- You can sign in to Azure with `az login` (for Azure CLI operations)
 - Visual Studio Code opens and the SQL Server and GitHub Copilot extensions are available
 - `python`, `pip`, `dotnet`, and `devtunnel` run successfully in the terminal
 - `C:\creds.txt` exists and includes SQL username/password, Foundry endpoint/key, and your participant-specific SQL hostname/database (or full connection string)
