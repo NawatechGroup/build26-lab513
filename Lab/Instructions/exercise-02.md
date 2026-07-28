@@ -67,7 +67,7 @@ This exercise teaches that discipline. You will ask Copilot to generate a semant
 
     Please follow these steps, using the mssql tool at each step:
        - Accept a customer question as an input variable
-       - Convert that question into an embedding vector using a REST call to an Azure AI Foundry embedding model deployment endpoint (put endpoint and credentials as placeholders in the code)
+       - Convert that question into an embedding vector using a REST call to an Azure AI Foundry 'text-embedding-3-small' embedding model deployment endpoint (put endpoint and credentials as placeholders in the code)
        - Compare that embedding against the embedding column in FAQ_Embeddings using an appropriate vector distance/similarity function
        - Join back to FAQ_Content to return the top 3 most relevant FAQ rows with all relevant display columns
     ```
